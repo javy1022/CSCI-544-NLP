@@ -62,22 +62,19 @@ def get_adverb_lemma(word):
     temp_bool = False
     param_wn_synset = word + ".r.01"
 
+    # check if word's synset continas adverb option
     for i in range(0, len(wn.synsets(word))):
         if param_wn_synset == str((wn.synsets(word)[i])).split("\'")[1]:
             temp_bool = True
 
     if  temp_bool == False:
-        # print(type(word))
-        # print(word)
         return word
 
-    print(word)
+    # if yes and suggestion not empty then return suggestion, else return original word
     suggest_lemma_list = wn.synset(param_wn_synset).lemmas()[0].pertainyms()
     if len(suggest_lemma_list) > 0:
-        print(suggest_lemma_list[0].name() + " 1 \n")
         return suggest_lemma_list[0].name()
     else:
-        print(word + " 2 \n")
         return word
 
 def word_lemmatization(word):
@@ -119,12 +116,12 @@ def data_cleaning(data_frame):
         # lower case and strip
         review_text = review_text.lower().strip()
 
-        # print(review_text)
+        print(review_text)
         # remove stop words
         review_text = remove_stopwords(review_text)
 
         data_frame.loc[i, ['review_body']] = review_text
-        # print(class1_df['review_body'][i] + "\n")
+        print(class1_df['review_body'][i] + "\n")
 
     return data_frame
 
@@ -153,28 +150,18 @@ if __name__ == '__main__':
 
     # working on class1_df to test code, handle duplicated rows that review_body only differ in whitespaces
     class1_df = data_cleaning(class1_df)
+    print(class1_df.info(verbose="True"))
+
     class1_df.drop_duplicates(inplace=True)
+    print(class1_df.info(verbose = "True"))
 
-    # text = word_tokenize("They refuse to permit us to obtain the refuse permit")
-    # print(nltk.pos_tag(text))
-    # print(map_tag('en-ptb', 'universal', 'RB'))
+    class1_df.drop_duplicates(inplace=True, subset="review_body")
+    print(class1_df.info(verbose="True"))
 
-    # elderly
 
-    # print(wn.synset("smelly.r.01"))
-    # print(type(wn.synsets("abnormally")[0]))
 
-    """
-    suggest_lemma_list = wn.synset("possibly.r.01").lemmas()[0].pertainyms()
-    if len(suggest_lemma_list) > 0:
-        print(type(suggest_lemma_list[0].name()))
-        print(suggest_lemma_list[0].name())
-    else:
-        print("no")
 
-    print(len(wn.synset("possibly.r.01").lemmas()[0].pertainyms()))
 
-    """
 
 
 
