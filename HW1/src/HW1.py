@@ -7,12 +7,16 @@ import pandas as pd
 import numpy as np
 import nltk as nltk
 import re
-from nltk.corpus import wordnet
+
+from nltk.corpus import wordnet as wn
 from bs4 import BeautifulSoup
 
 import contractions as ct
 import pkg_resources
 from symspellpy import SymSpell
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk import map_tag, WordNetLemmatizer, pos_tag
 import warnings
 
 RANDOM_SAMPLE_SIZE = 20000
@@ -40,9 +44,62 @@ def spell_correct(text):
     return suggestions[0].term
 
 
+def remove_stopwords(review_body_string):
+    word_tokens = word_tokenize(review_body_string)
+    buffer_string = ""
+
+    for w in word_tokens:
+        if w not in stop_words:
+            w = word_lemmatization(w)
+            buffer_string = buffer_string + w + "　"
+
+    buffer_string = re.sub(' +', ' ', buffer_string).strip()
+
+    return buffer_string
+
+
+def get_adverb_lemma(word):
+    temp_bool = False
+    param_wn_synset = word + ".r.01"
+
+    for i in range(0, len(wn.synsets(word))):
+        if param_wn_synset == str((wn.synsets(word)[i])).split("\'")[1]:
+            temp_bool = True
+
+    if  temp_bool == False:
+        # print(type(word))
+        # print(word)
+        return word
+
+    print(word)
+    suggest_lemma_list = wn.synset(param_wn_synset).lemmas()[0].pertainyms()
+    if len(suggest_lemma_list) > 0:
+        print(suggest_lemma_list[0].name() + " 1 \n")
+        return suggest_lemma_list[0].name()
+    else:
+        print(word + " 2 \n")
+        return word
+
+def word_lemmatization(word):
+    treebank_pos_tag = pos_tag([word])[0][1]
+    universal_pos_tag = map_tag('en-ptb', 'universal', treebank_pos_tag)
+
+    if universal_pos_tag == "ADJ":
+        word = wnl.lemmatize(word, wn.ADJ)
+    elif universal_pos_tag == "VERB":
+        word = wnl.lemmatize(word, wn.VERB)
+    elif universal_pos_tag == "NOUN":
+        word = wnl.lemmatize(word, wn.NOUN)
+    elif universal_pos_tag == "ADV":
+        word = wnl.lemmatize(word, wn.ADV)
+        word = get_adverb_lemma(word)
+
+    return word
+
+
 def data_cleaning(data_frame):
     # 0-50 for testing purpose
-    for i in range(0, 20000):
+    for i in range(0, 50):
         review_text = class1_df['review_body'][i]
 
         # remove un-wanted html tags
@@ -62,8 +119,12 @@ def data_cleaning(data_frame):
         # lower case and strip
         review_text = review_text.lower().strip()
 
+        # print(review_text)
+        # remove stop words
+        review_text = remove_stopwords(review_text)
+
         data_frame.loc[i, ['review_body']] = review_text
-        #print(class1_df['review_body'][i] + "\n")
+        # print(class1_df['review_body'][i] + "\n")
 
     return data_frame
 
@@ -82,6 +143,8 @@ if __name__ == '__main__':
     df = pd.read_pickle("./data.pkl")
     sym_spell = init_spell_checker()
     df = init_data(df).reset_index(drop=True)
+    stop_words = set(stopwords.words('english'))
+    wnl = WordNetLemmatizer()
 
     # 3-classes dataset
     class1_df = df[df['star_rating'] <= 2].sample(RANDOM_SAMPLE_SIZE).reset_index(drop=True)
@@ -91,3 +154,27 @@ if __name__ == '__main__':
     # working on class1_df to test code, handle duplicated rows that review_body only differ in whitespaces
     class1_df = data_cleaning(class1_df)
     class1_df.drop_duplicates(inplace=True)
+
+    # text = word_tokenize("They refuse to permit us to obtain the refuse permit")
+    # print(nltk.pos_tag(text))
+    # print(map_tag('en-ptb', 'universal', 'RB'))
+
+    # elderly
+
+    # print(wn.synset("smelly.r.01"))
+    # print(type(wn.synsets("abnormally")[0]))
+
+    """
+    suggest_lemma_list = wn.synset("possibly.r.01").lemmas()[0].pertainyms()
+    if len(suggest_lemma_list) > 0:
+        print(type(suggest_lemma_list[0].name()))
+        print(suggest_lemma_list[0].name())
+    else:
+        print("no")
+
+    print(len(wn.synset("possibly.r.01").lemmas()[0].pertainyms()))
+
+    """
+
+
+
