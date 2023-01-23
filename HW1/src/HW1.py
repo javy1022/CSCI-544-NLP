@@ -13,13 +13,19 @@ from bs4 import BeautifulSoup
 
 import contractions as ct
 import pkg_resources
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.svm import LinearSVC
 from symspellpy import SymSpell
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk import map_tag, WordNetLemmatizer, pos_tag
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import Perceptron
+from sklearn.linear_model import Perceptron, LogisticRegression
 from sklearn.model_selection import train_test_split
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV
+
 import warnings
 
 RANDOM_SAMPLE_SIZE = 20000
@@ -159,15 +165,64 @@ if __name__ == '__main__':
     cleaned_balanced_df = pd.read_pickle("./cleaned_balanced_df.pkl")
 
     # tf-idf feacture matrix
-    tf_idf = TfidfVectorizer(lowercase=False)
+    tf_idf = TfidfVectorizer(lowercase=False, ngram_range = (1,5))
     tf_idf_result = tf_idf.fit_transform(cleaned_balanced_df['review_body'])
 
     # split dataset into training and testing set
     X_train, X_test, y_train, y_test = train_test_split(tf_idf_result, cleaned_balanced_df['star_rating'],
                                                         test_size=0.2)
-    # Train Perceptron Model
-    clf = Perceptron()
-    clf = clf.fit(X_train, y_train)
 
-    # Perceptron accuracy
-    print(clf.score(X_test, y_test))
+    # Train Perceptron Model & output accuracy
+    clf_perceptron = Perceptron()
+    clf_perceptron = clf_perceptron.fit(X_train, y_train)
+    print("Perceptron: " + str(clf_perceptron.score(X_test, y_test)))
+
+
+    """
+    # Train VM Linear Model & output accuracy
+    clf_linear_svc = LinearSVC()
+    clf_linear_svc = clf_linear_svc.fit(X_train, y_train)
+    print("SVM Linear: " + str(clf_linear_svc.score(X_test, y_test)))
+    """
+    """
+    # Creating the hyperparameter grid
+
+    param_grid = {
+        'penalty': ['elasticnet'],
+        'fit_intercept':[False],
+         'early_stopping': [True],
+
+    }
+
+    # Instantiating logistic regression classifier
+    logreg = Perceptron()
+
+    # Instantiating the GridSearchCV object
+    logreg_cv = GridSearchCV(logreg,param_grid)
+
+    logreg_cv.fit(X_train, y_train)
+
+    # Print the tuned parameters and score
+    print("Tuned Logistic Regression Parameters: {}".format(logreg_cv.best_params_))
+    print("Best score is {}".format(logreg_cv.best_score_))
+    """
+    """
+    # Train Perceptron Model & output accuracy
+    clf_perceptron = Perceptron()
+    clf_perceptron = clf_perceptron.fit(X_train, y_train)
+    print("Perceptron: " + str(clf_perceptron.score(X_test, y_test)))
+
+    
+    # Train Logistic Regression Model & output accuracy
+    clf_logistic_regression = LogisticRegression(max_iter = 500)
+    clf_logistic_regression = clf_logistic_regression.fit(X_train, y_train)
+    print("Logistic Regression: " + str(clf_logistic_regression.score(X_test, y_test)))
+    
+    """
+    """
+    # Train MultinomialNB Model & output accuracy
+    clf_multinomial_nb = MultinomialNB()
+    clf_multinomial_nb = clf_multinomial_nb.fit(X_train, y_train)
+    print("Multinomial NB: " + str(clf_multinomial_nb.score(X_test, y_test)))
+    """
+
