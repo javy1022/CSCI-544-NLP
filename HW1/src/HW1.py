@@ -17,6 +17,7 @@ from symspellpy import SymSpell
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk import map_tag, WordNetLemmatizer, pos_tag
+from sklearn.feature_extraction.text import TfidfVectorizer
 import warnings
 
 RANDOM_SAMPLE_SIZE = 20000
@@ -75,7 +76,7 @@ def get_adverb_lemma(word):
     # check if word's synset contains adverb option
     for i in range(0, len(wn.synsets(word))):
         if param_wn_synset == str((wn.synsets(word)[i])).split("\'")[1]:
-            temp_bool = True
+            has_suggestion = True
 
     if not has_suggestion:
         return word
@@ -103,9 +104,9 @@ def lemmatize_non_stopwords(review_body_string):
 
 def data_cleaning(data_frame):
     # 0-50 for testing purpose
-    for i in range(0, Testing_counter):
-        review_text = class1_df['review_body'][i]
-
+    for i in range(0, len(data_frame)):
+        review_text = data_frame['review_body'][i]
+        print(review_text)
         # remove un-wanted html tags
         if BeautifulSoup(review_text, "html.parser").find():
             review_text = BeautifulSoup(review_text, "html.parser").get_text("　")
@@ -127,43 +128,34 @@ def data_cleaning(data_frame):
         review_text = lemmatize_non_stopwords(review_text)
 
         data_frame.loc[i, ['review_body']] = review_text
-        print(class1_df['review_body'][i] + "\n")
+        print(data_frame['review_body'][i] + "\n")
 
     return data_frame
 
 
 if __name__ == '__main__':
+    """
     # init
     warnings.filterwarnings("ignore", category=UserWarning, module='bs4')
     sym_spell = init_spell_checker()
     stop_words = set(stopwords.words('english'))
     wnl = WordNetLemmatizer()
 
-    # Using pkl file to save time when debugging. Use real source data.pkl after finish debugging.
-    # Save pkl copies of 3 classes for potential debug sessions
-    """
     # program start
     df = pd.read_pickle("./data.pkl")
     df = init_data(df).reset_index(drop=True)
-   
+
     # 3-classes dataset
-    class1_df = df[df['star_rating'] <= 2].sample(RANDOM_SAMPLE_SIZE).reset_index(drop=True)
+    class1_df = df[df['star_rating'] <= 2].sample(RANDOM_SAMPLE_SIZE)
     class2_df = df[df['star_rating'] == 3].sample(RANDOM_SAMPLE_SIZE)
     class3_df = df[df['star_rating'] >= 4].sample(RANDOM_SAMPLE_SIZE)
+
+    balanced_df = pd.concat([class1_df, class2_df, class3_df]).reset_index(drop=True)
+    cleaned_balanced_df= data_cleaning(balanced_df)
     """
+    # cleaned_balanced_df cache
+    cleaned_balanced_df = pd.read_pickle("./cleaned_balanced_df.pkl")
+    print(cleaned_balanced_df['review_body'])
 
-    # test counter to prevent from looping through the whole data frame, set to 20000 after finish debugging
-    Testing_counter = 50
 
-    # working on class1_df to test code, handle empty rows after data cleaning step
 
-    class1_df = pd.read_pickle("./class1_debug.pkl")
-    class1_df = data_cleaning(class1_df)
-    class1_df.dropna(inplace=True)
-
-    """
-    class2_df = data_cleaning(class2_df)
-    class2_df.dropna(inplace=True)
-    class3_df = data_cleaning(class3_df)
-    class3_df.dropna(inplace=True)
-    """
