@@ -18,6 +18,8 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk import map_tag, WordNetLemmatizer, pos_tag
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import Perceptron
+from sklearn.model_selection import train_test_split
 import warnings
 
 RANDOM_SAMPLE_SIZE = 20000
@@ -155,7 +157,17 @@ if __name__ == '__main__':
     """
     # cleaned_balanced_df cache
     cleaned_balanced_df = pd.read_pickle("./cleaned_balanced_df.pkl")
-    print(cleaned_balanced_df['review_body'])
 
+    # tf-idf feacture matrix
+    tf_idf = TfidfVectorizer(lowercase=False)
+    tf_idf_result = tf_idf.fit_transform(cleaned_balanced_df['review_body'])
 
+    # split dataset into training and testing set
+    X_train, X_test, y_train, y_test = train_test_split(tf_idf_result, cleaned_balanced_df['star_rating'],
+                                                        test_size=0.2)
+    # Train Perceptron Model
+    clf = Perceptron()
+    clf = clf.fit(X_train, y_train)
 
+    # Perceptron accuracy
+    print(clf.score(X_test, y_test))
