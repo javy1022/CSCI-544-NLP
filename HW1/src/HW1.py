@@ -1,33 +1,32 @@
 # Python Version: 3.7.9
 # Pandas Version: 1.3.5
-# Numppy Version: 1.21.6
+# Beautiful4 Soup Version: 4.11.1
+# Contractions Version: 0.0.18
+# Setuptools Version: 60.2.0
+# Symspellpy Version: 6.7.7
 # NLTK Version: 3.8.1
+# Scikit-learn Version: 1.0.2
 
 import pandas as pd
-import numpy as np
-import nltk as nltk
 import re
-
-from nltk.corpus import wordnet as wn
 from bs4 import BeautifulSoup
-
 import contractions as ct
 import pkg_resources
-from sklearn.metrics import classification_report
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.svm import LinearSVC
 from symspellpy import SymSpell
+import warnings
+
+from nltk.corpus import wordnet as wn
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk import map_tag, WordNetLemmatizer, pos_tag
+
+from sklearn.svm import LinearSVC
+from sklearn.metrics import classification_report
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import Perceptron, LogisticRegression
 from sklearn.model_selection import train_test_split
-
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GridSearchCV
-
-import warnings
 
 RANDOM_SAMPLE_SIZE = 20000
 
@@ -119,7 +118,18 @@ def data_cleaning(data_frame):
 
     # 0-50 for testing purpose
     for i in range(0, len(data_frame)):
+
         print(str(i))
+
+        if data_frame['star_rating'][i] == '1' or data_frame['star_rating'][i] == '2':
+           data_frame.loc[i, ['star_rating']] = 'Class 1'
+        elif data_frame['star_rating'][i] == '3':
+           data_frame.loc[i, ['star_rating']] = 'Class 2'
+        elif data_frame['star_rating'][i] == '4' or data_frame['star_rating'][i] == '5':
+           data_frame.loc[i, ['star_rating']] = 'Class 3'
+
+
+
 
         review_text = data_frame['review_body'][i]
         before_data_cleaning_reviews_total_length = before_data_cleaning_reviews_total_length + len(review_text)
@@ -162,19 +172,19 @@ def data_cleaning(data_frame):
 
 def generate_report(y_test, y_pred):
     report = classification_report(y_test, y_pred, zero_division=1, output_dict=True)
-    print("Class 1 Precision: " + str(report['1']['precision']) + ", Class 1 Recall: " + str(
-        report['1']['recall']) + ", Class 1 f1-score: " + str(report['1']['f1-score']))
-    print("Class 2 Precision: " + str(report['2']['precision']) + ", Class 2 Recall: " + str(
-        report['2']['recall']) + ", Class 2 f1-score: " + str(report['2']['f1-score']))
-    print("Class 3 Precision: " + str(report['3']['precision']) + ", Class 3 Recall: " + str(
-        report['3']['recall']) + ", Class 3 f1-score: " + str(report['3']['f1-score']))
+    print("Class 1 Precision: " + str(report['Class 1']['precision']) + ", Class 1 Recall: " + str(
+        report['Class 1']['recall']) + ", Class 1 f1-score: " + str(report['Class 1']['f1-score']))
+    print("Class 2 Precision: " + str(report['Class 2']['precision']) + ", Class 2 Recall: " + str(
+        report['Class 2']['recall']) + ", Class 2 f1-score: " + str(report['Class 2']['f1-score']))
+    print("Class 3 Precision: " + str(report['Class 3']['precision']) + ", Class 3 Recall: " + str(
+        report['Class 3']['recall']) + ", Class 3 f1-score: " + str(report['Class 3']['f1-score']))
     print("Average Precision: " + str(report['macro avg']['precision']) + ", Averagage Recall: " + str(
         report['macro avg']['recall']) + ", Averagage f1-score: " + str(
         report['macro avg']['f1-score']))
     print("\n")
 
 
-# print(classification_report(y_test, y_pred, zero_division=1))
+    print(classification_report(y_test, y_pred, zero_division=1))
 
 
 if __name__ == '__main__':
@@ -189,20 +199,24 @@ if __name__ == '__main__':
     df = pd.read_pickle("./data.pkl")
     df = init_data(df).reset_index(drop=True)
 
+
+
     # 3-classes dataset
     class1_df = df[df['star_rating'] <= 2].sample(RANDOM_SAMPLE_SIZE)
     class2_df = df[df['star_rating'] == 3].sample(RANDOM_SAMPLE_SIZE)
     class3_df = df[df['star_rating'] >= 4].sample(RANDOM_SAMPLE_SIZE)
 
     balanced_df = pd.concat([class1_df, class2_df, class3_df]).reset_index(drop=True)
-
-
+    balanced_df['star_rating'] = balanced_df['star_rating'].astype('string')
     cleaned_balanced_df= data_cleaning(balanced_df)
 
-    """
+
     # cleaned_balanced_df cache
-    cleaned_balanced_df = pd.read_pickle("./cleaned_balanced_df.pkl")
+    cleaned_balanced_df.to_pickle('cleaned_balanced_df_official.pkl')
+    cleaned_balanced_df = pd.read_pickle("./cleaned_balanced_df_official.pkl")
+
     # tf-idf feacture matrix
+
     tf_idf = TfidfVectorizer(lowercase=False, ngram_range=(1, 5))
     tf_idf_result = tf_idf.fit_transform(cleaned_balanced_df['review_body'])
 
@@ -213,28 +227,24 @@ if __name__ == '__main__':
     # Train Perceptron Model & output accuracy
     clf_perceptron = Perceptron()
     clf_perceptron = clf_perceptron.fit(X_train, y_train)
-    # print("Perceptron: " + str(clf_perceptron.score(X_test, y_test)))
     y_pred_perceptron = clf_perceptron.predict(X_test)
     generate_report(y_test, y_pred_perceptron)
 
     # Train VM Linear Model & output accuracy
     clf_linear_svc = LinearSVC(loss='hinge')
     clf_linear_svc = clf_linear_svc.fit(X_train, y_train)
-    # print("SVM Linear: " + str(clf_linear_svc.score(X_test, y_test)))
     y_pred_linear_svc = clf_linear_svc.predict(X_test)
     generate_report(y_test, y_pred_linear_svc)
 
     # Train Logistic Regression Model & output accuracy
     clf_logistic_regression = LogisticRegression(solver='sag')
     clf_logistic_regression = clf_logistic_regression.fit(X_train, y_train)
-    # print("Logistic Regression: " + str(clf_logistic_regression.score(X_test, y_test)))
     y_pred_logistic_regression = clf_logistic_regression.predict(X_test)
     generate_report(y_test, y_pred_logistic_regression)
 
     # Train MultinomialNB Model & output accuracy
     clf_multinomial_nb = MultinomialNB(fit_prior=False)
     clf_multinomial_nb = clf_multinomial_nb.fit(X_train, y_train)
-    # print("Multinomial NB: " + str(clf_multinomial_nb.score(X_test, y_test)))
     y_pred_multinomial_nb = clf_multinomial_nb.predict(X_test)
     generate_report(y_test, y_pred_multinomial_nb)
-    """
+
