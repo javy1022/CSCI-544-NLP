@@ -204,11 +204,7 @@ if __name__ == '__main__':
     balanced_df = pd.concat([class1_df, class2_df, class3_df]).reset_index(drop=True)
     balanced_df['star_rating'] = balanced_df['star_rating'].astype('string')
     cleaned_balanced_df = data_cleaning(balanced_df)
-
-    # cleaned_balanced_df cache
-    cleaned_balanced_df.to_pickle('cleaned_balanced_df_official.pkl')
-    cleaned_balanced_df = pd.read_pickle("./cleaned_balanced_df_official.pkl")
-
+   
     # tf-idf feacture matrix
     tf_idf = TfidfVectorizer(lowercase=False, ngram_range=(1, 5))
     tf_idf_result = tf_idf.fit_transform(cleaned_balanced_df['review_body'])
