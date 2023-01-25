@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 
 import contractions as ct
 import pkg_resources
+from sklearn.metrics import classification_report
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC
 from symspellpy import SymSpell
@@ -140,6 +141,21 @@ def data_cleaning(data_frame):
 
     return data_frame
 
+def generate_report(y_test,y_pred):
+    report = classification_report(y_test, y_pred, zero_division=1, output_dict=True)
+    print("Class 1 Precision: " + str(report['1']['precision']) + ", Class 1 Recall: " + str(
+        report['1']['recall']) + ", Class 1 f1-score: " + str(report['1']['f1-score']))
+    print("Class 2 Precision: " + str(report['2']['precision']) + ", Class 2 Recall: " + str(
+        report['2']['recall']) + ", Class 2 f1-score: " + str(report['2']['f1-score']))
+    print("Class 3 Precision: " + str(report['3']['precision']) + ", Class 3 Recall: " + str(
+        report['3']['recall']) + ", Class 3 f1-score: " + str(report['3']['f1-score']))
+    print("Average Precision: " + str(report['macro avg']['precision']) + ", Averagage Recall: " + str(
+        report['macro avg']['recall']) + ", Averagage f1-score: " + str(
+        report['macro avg']['f1-score']))
+    print("\n")
+
+   # print(classification_report(y_test, y_pred, zero_division=1))
+
 
 if __name__ == '__main__':
     """
@@ -161,68 +177,45 @@ if __name__ == '__main__':
     balanced_df = pd.concat([class1_df, class2_df, class3_df]).reset_index(drop=True)
     cleaned_balanced_df= data_cleaning(balanced_df)
     """
+
     # cleaned_balanced_df cache
     cleaned_balanced_df = pd.read_pickle("./cleaned_balanced_df.pkl")
-
     # tf-idf feacture matrix
-    tf_idf = TfidfVectorizer(lowercase=False, ngram_range = (1,5))
+    tf_idf = TfidfVectorizer(lowercase=False, ngram_range=(1, 5))
     tf_idf_result = tf_idf.fit_transform(cleaned_balanced_df['review_body'])
 
     # split dataset into training and testing set
     X_train, X_test, y_train, y_test = train_test_split(tf_idf_result, cleaned_balanced_df['star_rating'],
                                                         test_size=0.2)
 
+
     # Train Perceptron Model & output accuracy
     clf_perceptron = Perceptron()
     clf_perceptron = clf_perceptron.fit(X_train, y_train)
-    print("Perceptron: " + str(clf_perceptron.score(X_test, y_test)))
+    #print("Perceptron: " + str(clf_perceptron.score(X_test, y_test)))
+    y_pred_perceptron = clf_perceptron.predict(X_test)
+    generate_report(y_test,y_pred_perceptron)
 
-
-    """
     # Train VM Linear Model & output accuracy
-    clf_linear_svc = LinearSVC()
+    clf_linear_svc = LinearSVC(loss='hinge')
     clf_linear_svc = clf_linear_svc.fit(X_train, y_train)
-    print("SVM Linear: " + str(clf_linear_svc.score(X_test, y_test)))
-    """
-    """
-    # Creating the hyperparameter grid
+   # print("SVM Linear: " + str(clf_linear_svc.score(X_test, y_test)))
+    y_pred_linear_svc = clf_linear_svc.predict(X_test)
+    generate_report(y_test, y_pred_linear_svc)
 
-    param_grid = {
-        'penalty': ['elasticnet'],
-        'fit_intercept':[False],
-         'early_stopping': [True],
 
-    }
 
-    # Instantiating logistic regression classifier
-    logreg = Perceptron()
-
-    # Instantiating the GridSearchCV object
-    logreg_cv = GridSearchCV(logreg,param_grid)
-
-    logreg_cv.fit(X_train, y_train)
-
-    # Print the tuned parameters and score
-    print("Tuned Logistic Regression Parameters: {}".format(logreg_cv.best_params_))
-    print("Best score is {}".format(logreg_cv.best_score_))
-    """
-    """
-    # Train Perceptron Model & output accuracy
-    clf_perceptron = Perceptron()
-    clf_perceptron = clf_perceptron.fit(X_train, y_train)
-    print("Perceptron: " + str(clf_perceptron.score(X_test, y_test)))
-
-    
     # Train Logistic Regression Model & output accuracy
-    clf_logistic_regression = LogisticRegression(max_iter = 500)
+    clf_logistic_regression = LogisticRegression(solver = 'sag')
     clf_logistic_regression = clf_logistic_regression.fit(X_train, y_train)
-    print("Logistic Regression: " + str(clf_logistic_regression.score(X_test, y_test)))
-    
-    """
-    """
+    #print("Logistic Regression: " + str(clf_logistic_regression.score(X_test, y_test)))
+    y_pred_logistic_regression = clf_logistic_regression.predict(X_test)
+    generate_report(y_test, y_pred_logistic_regression)
+
     # Train MultinomialNB Model & output accuracy
-    clf_multinomial_nb = MultinomialNB()
+    clf_multinomial_nb = MultinomialNB( fit_prior=False)
     clf_multinomial_nb = clf_multinomial_nb.fit(X_train, y_train)
-    print("Multinomial NB: " + str(clf_multinomial_nb.score(X_test, y_test)))
-    """
+    #print("Multinomial NB: " + str(clf_multinomial_nb.score(X_test, y_test)))
+    y_pred_multinomial_nb = clf_multinomial_nb.predict(X_test)
+    generate_report(y_test, y_pred_multinomial_nb)
 
