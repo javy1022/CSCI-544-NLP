@@ -112,10 +112,18 @@ def lemmatize_non_stopwords(review_body_string):
 
 
 def data_cleaning(data_frame):
+    before_data_cleaning_reviews_total_length = 0
+    after_data_cleaning_reviews_total_length = 0
+    before_data_preprocessing_reviews_total_length = 0
+    after_data_preprocessing_reviews_total_length = 0
+
     # 0-50 for testing purpose
     for i in range(0, len(data_frame)):
+        print(str(i))
+
         review_text = data_frame['review_body'][i]
-        print(review_text)
+        before_data_cleaning_reviews_total_length = before_data_cleaning_reviews_total_length + len(review_text)
+
         # remove un-wanted html tags
         if BeautifulSoup(review_text, "html.parser").find():
             review_text = BeautifulSoup(review_text, "html.parser").get_text("　")
@@ -132,16 +140,27 @@ def data_cleaning(data_frame):
 
         # lower case and strip
         review_text = review_text.lower().strip()
+        review_text = " ".join(review_text.split())
 
-        # remove stop words
+        # end of data cleaning, before data processing
+        after_data_cleaning_reviews_total_length = after_data_cleaning_reviews_total_length + len(review_text)
+
+        # start of data processing
+        before_data_preprocessing_reviews_total_length = before_data_preprocessing_reviews_total_length  + len(review_text)
         review_text = lemmatize_non_stopwords(review_text)
+        # end of data processing
+        review_text = " ".join(review_text.split())
+        after_data_preprocessing_reviews_total_length = after_data_preprocessing_reviews_total_length + len(review_text)
 
         data_frame.loc[i, ['review_body']] = review_text
-        print(data_frame['review_body'][i] + "\n")
+
+    print("Average length of reviews before data cleaning: " + str(before_data_cleaning_reviews_total_length/len(data_frame)) + ", Average length of reviews after data cleaning: " + str(after_data_cleaning_reviews_total_length/len(data_frame)))
+    print("Average length of reviews before data preprocessing: " + str(before_data_preprocessing_reviews_total_length/len(data_frame)) + ", Average length of reviews after data preprocessing: " + str(after_data_preprocessing_reviews_total_length/len(data_frame)))
 
     return data_frame
 
-def generate_report(y_test,y_pred):
+
+def generate_report(y_test, y_pred):
     report = classification_report(y_test, y_pred, zero_division=1, output_dict=True)
     print("Class 1 Precision: " + str(report['1']['precision']) + ", Class 1 Recall: " + str(
         report['1']['recall']) + ", Class 1 f1-score: " + str(report['1']['f1-score']))
@@ -154,11 +173,12 @@ def generate_report(y_test,y_pred):
         report['macro avg']['f1-score']))
     print("\n")
 
-   # print(classification_report(y_test, y_pred, zero_division=1))
+
+# print(classification_report(y_test, y_pred, zero_division=1))
 
 
 if __name__ == '__main__':
-    """
+
     # init
     warnings.filterwarnings("ignore", category=UserWarning, module='bs4')
     sym_spell = init_spell_checker()
@@ -175,9 +195,11 @@ if __name__ == '__main__':
     class3_df = df[df['star_rating'] >= 4].sample(RANDOM_SAMPLE_SIZE)
 
     balanced_df = pd.concat([class1_df, class2_df, class3_df]).reset_index(drop=True)
-    cleaned_balanced_df= data_cleaning(balanced_df)
-    """
 
+
+    cleaned_balanced_df= data_cleaning(balanced_df)
+
+    """
     # cleaned_balanced_df cache
     cleaned_balanced_df = pd.read_pickle("./cleaned_balanced_df.pkl")
     # tf-idf feacture matrix
@@ -188,34 +210,31 @@ if __name__ == '__main__':
     X_train, X_test, y_train, y_test = train_test_split(tf_idf_result, cleaned_balanced_df['star_rating'],
                                                         test_size=0.2)
 
-
     # Train Perceptron Model & output accuracy
     clf_perceptron = Perceptron()
     clf_perceptron = clf_perceptron.fit(X_train, y_train)
-    #print("Perceptron: " + str(clf_perceptron.score(X_test, y_test)))
+    # print("Perceptron: " + str(clf_perceptron.score(X_test, y_test)))
     y_pred_perceptron = clf_perceptron.predict(X_test)
-    generate_report(y_test,y_pred_perceptron)
+    generate_report(y_test, y_pred_perceptron)
 
     # Train VM Linear Model & output accuracy
     clf_linear_svc = LinearSVC(loss='hinge')
     clf_linear_svc = clf_linear_svc.fit(X_train, y_train)
-   # print("SVM Linear: " + str(clf_linear_svc.score(X_test, y_test)))
+    # print("SVM Linear: " + str(clf_linear_svc.score(X_test, y_test)))
     y_pred_linear_svc = clf_linear_svc.predict(X_test)
     generate_report(y_test, y_pred_linear_svc)
 
-
-
     # Train Logistic Regression Model & output accuracy
-    clf_logistic_regression = LogisticRegression(solver = 'sag')
+    clf_logistic_regression = LogisticRegression(solver='sag')
     clf_logistic_regression = clf_logistic_regression.fit(X_train, y_train)
-    #print("Logistic Regression: " + str(clf_logistic_regression.score(X_test, y_test)))
+    # print("Logistic Regression: " + str(clf_logistic_regression.score(X_test, y_test)))
     y_pred_logistic_regression = clf_logistic_regression.predict(X_test)
     generate_report(y_test, y_pred_logistic_regression)
 
     # Train MultinomialNB Model & output accuracy
-    clf_multinomial_nb = MultinomialNB( fit_prior=False)
+    clf_multinomial_nb = MultinomialNB(fit_prior=False)
     clf_multinomial_nb = clf_multinomial_nb.fit(X_train, y_train)
-    #print("Multinomial NB: " + str(clf_multinomial_nb.score(X_test, y_test)))
+    # print("Multinomial NB: " + str(clf_multinomial_nb.score(X_test, y_test)))
     y_pred_multinomial_nb = clf_multinomial_nb.predict(X_test)
     generate_report(y_test, y_pred_multinomial_nb)
-
+    """
