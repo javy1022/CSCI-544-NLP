@@ -116,20 +116,14 @@ def data_cleaning(data_frame):
     before_data_preprocessing_reviews_total_length = 0
     after_data_preprocessing_reviews_total_length = 0
 
-    # 0-50 for testing purpose
     for i in range(0, len(data_frame)):
 
-        print(str(i))
-
         if data_frame['star_rating'][i] == '1' or data_frame['star_rating'][i] == '2':
-           data_frame.loc[i, ['star_rating']] = 'Class 1'
+            data_frame.loc[i, ['star_rating']] = 'Class 1'
         elif data_frame['star_rating'][i] == '3':
-           data_frame.loc[i, ['star_rating']] = 'Class 2'
+            data_frame.loc[i, ['star_rating']] = 'Class 2'
         elif data_frame['star_rating'][i] == '4' or data_frame['star_rating'][i] == '5':
-           data_frame.loc[i, ['star_rating']] = 'Class 3'
-
-
-
+            data_frame.loc[i, ['star_rating']] = 'Class 3'
 
         review_text = data_frame['review_body'][i]
         before_data_cleaning_reviews_total_length = before_data_cleaning_reviews_total_length + len(review_text)
@@ -148,7 +142,7 @@ def data_cleaning(data_frame):
         regex = re.compile('[^a-zA-Z]')
         review_text = regex.sub(' ', review_text)
 
-        # lower case and strip
+        # convert to lower case
         review_text = review_text.lower().strip()
         review_text = " ".join(review_text.split())
 
@@ -156,7 +150,8 @@ def data_cleaning(data_frame):
         after_data_cleaning_reviews_total_length = after_data_cleaning_reviews_total_length + len(review_text)
 
         # start of data processing
-        before_data_preprocessing_reviews_total_length = before_data_preprocessing_reviews_total_length  + len(review_text)
+        before_data_preprocessing_reviews_total_length = before_data_preprocessing_reviews_total_length + len(
+            review_text)
         review_text = lemmatize_non_stopwords(review_text)
         # end of data processing
         review_text = " ".join(review_text.split())
@@ -164,8 +159,14 @@ def data_cleaning(data_frame):
 
         data_frame.loc[i, ['review_body']] = review_text
 
-    print("Average length of reviews before data cleaning: " + str(before_data_cleaning_reviews_total_length/len(data_frame)) + ", Average length of reviews after data cleaning: " + str(after_data_cleaning_reviews_total_length/len(data_frame)))
-    print("Average length of reviews before data preprocessing: " + str(before_data_preprocessing_reviews_total_length/len(data_frame)) + ", Average length of reviews after data preprocessing: " + str(after_data_preprocessing_reviews_total_length/len(data_frame)))
+    print("Average length of reviews before data cleaning: " + str(before_data_cleaning_reviews_total_length / len(
+        data_frame)) + ", Average length of reviews after data cleaning: " + str(
+        after_data_cleaning_reviews_total_length / len(data_frame)))
+    print("Average length of reviews before data preprocessing: " + str(
+        before_data_preprocessing_reviews_total_length / len(
+            data_frame)) + ", Average length of reviews after data preprocessing: " + str(
+        after_data_preprocessing_reviews_total_length / len(data_frame)))
+    print("\n")
 
     return data_frame
 
@@ -184,22 +185,16 @@ def generate_report(y_test, y_pred):
     print("\n")
 
 
-    print(classification_report(y_test, y_pred, zero_division=1))
-
-
 if __name__ == '__main__':
-
     # init
     warnings.filterwarnings("ignore", category=UserWarning, module='bs4')
     sym_spell = init_spell_checker()
     stop_words = set(stopwords.words('english'))
     wnl = WordNetLemmatizer()
 
-    # program start
+    # reading data
     df = pd.read_pickle("./data.pkl")
     df = init_data(df).reset_index(drop=True)
-
-
 
     # 3-classes dataset
     class1_df = df[df['star_rating'] <= 2].sample(RANDOM_SAMPLE_SIZE)
@@ -208,15 +203,13 @@ if __name__ == '__main__':
 
     balanced_df = pd.concat([class1_df, class2_df, class3_df]).reset_index(drop=True)
     balanced_df['star_rating'] = balanced_df['star_rating'].astype('string')
-    cleaned_balanced_df= data_cleaning(balanced_df)
-
+    cleaned_balanced_df = data_cleaning(balanced_df)
 
     # cleaned_balanced_df cache
     cleaned_balanced_df.to_pickle('cleaned_balanced_df_official.pkl')
     cleaned_balanced_df = pd.read_pickle("./cleaned_balanced_df_official.pkl")
 
     # tf-idf feacture matrix
-
     tf_idf = TfidfVectorizer(lowercase=False, ngram_range=(1, 5))
     tf_idf_result = tf_idf.fit_transform(cleaned_balanced_df['review_body'])
 
@@ -230,7 +223,7 @@ if __name__ == '__main__':
     y_pred_perceptron = clf_perceptron.predict(X_test)
     generate_report(y_test, y_pred_perceptron)
 
-    # Train VM Linear Model & output accuracy
+    # Train SVM Linear Model & output accuracy
     clf_linear_svc = LinearSVC(loss='hinge')
     clf_linear_svc = clf_linear_svc.fit(X_train, y_train)
     y_pred_linear_svc = clf_linear_svc.predict(X_test)
@@ -247,4 +240,3 @@ if __name__ == '__main__':
     clf_multinomial_nb = clf_multinomial_nb.fit(X_train, y_train)
     y_pred_multinomial_nb = clf_multinomial_nb.predict(X_test)
     generate_report(y_test, y_pred_multinomial_nb)
-
