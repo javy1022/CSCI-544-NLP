@@ -20,6 +20,13 @@ def output_vocab_txt():
     vocab_file.close()
 
 
+def dict_add(dict_key, dict_name):
+    if dict_key not in dict_name:
+        dict_name[dict_key] = 1
+    else:
+        dict_name[dict_key] = dict_name[dict_key] + 1
+
+
 def generate_vocab_and_pos_tags_dicts():
     train_file = open('train.txt', 'r')
 
@@ -34,10 +41,7 @@ def generate_vocab_and_pos_tags_dicts():
 
         if not line:
             key = previous_pos_tag + " to " + "END"
-            if key not in HMM_assum_sequences_count:
-                HMM_assum_sequences_count[key] = 1
-            else:
-                HMM_assum_sequences_count[key] = HMM_assum_sequences_count[key] + 1
+            dict_add(key, HMM_assum_sequences_count)
             break
 
         if line.strip():
@@ -45,16 +49,8 @@ def generate_vocab_and_pos_tags_dicts():
             pos_tag = line.split("\t")[2].strip()
             emission_key = pos_tag + " to " + word
 
-
-            if word not in vocab:
-                vocab[word] = 1
-            else:
-                vocab[word] = vocab[word] + 1
-
-            if pos_tag not in pos_tags_count:
-                pos_tags_count[pos_tag] = 1
-            else:
-                pos_tags_count[pos_tag] = pos_tags_count[pos_tag] + 1
+            dict_add(word, vocab)
+            dict_add(pos_tag, pos_tags_count)
 
             if is_first_line:
                 key = "START" + " to " + pos_tag
@@ -64,35 +60,20 @@ def generate_vocab_and_pos_tags_dicts():
             else:
                 if previous_pos_tag != " ":
                     key = previous_pos_tag + " to " + pos_tag
-                    if key not in HMM_assum_sequences_count:
-                        HMM_assum_sequences_count[key] = 1
-                    else:
-                        HMM_assum_sequences_count[key] = HMM_assum_sequences_count[key] + 1
+                    dict_add(key, HMM_assum_sequences_count)
                 else:
                     key = "START" + " to " + pos_tag
-                    if key not in HMM_assum_sequences_count:
-                        HMM_assum_sequences_count[key] = 1
-                    else:
-                        HMM_assum_sequences_count[key] = HMM_assum_sequences_count[key] + 1
-
+                    dict_add(key, HMM_assum_sequences_count)
                 previous_pos_tag = pos_tag
 
-            if emission_key not in pos_tags_to_words_count:
-                pos_tags_to_words_count[emission_key] = 1
-            else:
-                pos_tags_to_words_count[emission_key] = pos_tags_to_words_count[emission_key] + 1
-
-
+            dict_add(emission_key, pos_tags_to_words_count)
 
         else:
             pos_tags_count["START"] = pos_tags_count["START"] + 1
-            pos_tags_count["END"] =  pos_tags_count["END"] + 1
+            pos_tags_count["END"] = pos_tags_count["END"] + 1
             key = previous_pos_tag + " to " + "END"
 
-            if key not in HMM_assum_sequences_count:
-                HMM_assum_sequences_count[key] = 1
-            else:
-                HMM_assum_sequences_count[key] = HMM_assum_sequences_count[key] + 1
+            dict_add(key,HMM_assum_sequences_count)
             previous_pos_tag = " "
 
     train_file.close()
@@ -106,7 +87,6 @@ def generate_transition_dict():
     transition_temp = {}
 
     for key, value in HMM_assum_sequences_count.items():
-
         first_pos_tag = key.split(" ")[0]
         second_pos_tag = key.split(" ")[2]
         transition_key = "(" + first_pos_tag + "," + second_pos_tag + ")"
@@ -126,6 +106,7 @@ def generate_emission_dict():
 
     return emission_temp
 
+
 if __name__ == '__main__':
     vocab = {}
     pos_tags_count = {}
@@ -136,6 +117,7 @@ if __name__ == '__main__':
     transition = generate_transition_dict()
     emission = generate_emission_dict()
 
+    print(emission)
     """
     transition_file = open('transition_debug.txt', 'w')
     transition_file.write(str(transition))
