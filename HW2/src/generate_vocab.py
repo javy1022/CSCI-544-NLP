@@ -32,18 +32,18 @@ def generate_vocab_and_pos_tags_dicts():
 
     previous_pos_tag = ""
     is_first_line = True
-
     pos_tags_count["START"] = 1
     pos_tags_count["END"] = 1
 
     while True:
         line = train_file.readline()
-
+        # if eof
         if not line:
+            # edge case
             key = previous_pos_tag + " to " + "END"
             dict_add(key, HMM_assum_sequences_count)
             break
-
+        # if line not empty
         if line.strip():
             word = line.split("\t")[1].strip()
             pos_tag = line.split("\t")[2].strip()
@@ -51,8 +51,10 @@ def generate_vocab_and_pos_tags_dicts():
 
             dict_add(word, vocab)
             dict_add(pos_tag, pos_tags_count)
-
+            dict_add(emission_key, pos_tags_to_words_count)
+            # add element to HMM dict
             if is_first_line:
+                # edge case
                 key = "START" + " to " + pos_tag
                 HMM_assum_sequences_count[key] = 1
                 previous_pos_tag = pos_tag
@@ -65,21 +67,17 @@ def generate_vocab_and_pos_tags_dicts():
                     key = "START" + " to " + pos_tag
                     dict_add(key, HMM_assum_sequences_count)
                 previous_pos_tag = pos_tag
-
-            dict_add(emission_key, pos_tags_to_words_count)
-
+        # if line is empty
         else:
             pos_tags_count["START"] = pos_tags_count["START"] + 1
             pos_tags_count["END"] = pos_tags_count["END"] + 1
             key = previous_pos_tag + " to " + "END"
-
-            dict_add(key,HMM_assum_sequences_count)
+            dict_add(key, HMM_assum_sequences_count)
             previous_pos_tag = " "
 
     train_file.close()
 
     output_vocab_txt()
-
     return
 
 
@@ -116,8 +114,7 @@ if __name__ == '__main__':
     generate_vocab_and_pos_tags_dicts()
     transition = generate_transition_dict()
     emission = generate_emission_dict()
-
-    print(emission)
+    
     """
     transition_file = open('transition_debug.txt', 'w')
     transition_file.write(str(transition))
