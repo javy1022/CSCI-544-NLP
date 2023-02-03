@@ -1,24 +1,7 @@
-if __name__ == '__main__':
-    train_file = open('train.txt', 'r')
-    vocab = {}
-    THRESHOLD = 3
+THRESHOLD = 3
 
-    while True:
-        line = train_file.readline()
 
-        if not line:
-            break
-
-        if line.strip():
-            word = line.split("\t")[1].strip()
-
-            if word not in vocab:
-                vocab[word] = 1
-            else:
-                vocab[word] = vocab[word] + 1
-
-    train_file.close()
-
+def output_vocab_txt():
     unknown_count = 0
     for w in vocab:
         if vocab[w] < THRESHOLD:
@@ -35,3 +18,96 @@ if __name__ == '__main__':
             vocab_file.write(w + "\t" + str(index) + "\t" + str(vocab[w]) + "\n")
 
     vocab_file.close()
+
+
+def generate_vocab_and_pos_tags_dicts():
+    train_file = open('train.txt', 'r')
+
+    previous_pos_tag = ""
+    is_first_line = True
+    while True:
+        line = train_file.readline()
+
+        if not line:
+            break
+
+        if line.strip():
+            word = line.split("\t")[1].strip()
+            pos_tag = line.split("\t")[2].strip()
+            emission_key = pos_tag + " to " + word
+
+            if word not in vocab:
+                vocab[word] = 1
+            else:
+                vocab[word] = vocab[word] + 1
+
+            if pos_tag not in pos_tags_count:
+                pos_tags_count[pos_tag] = 1
+            else:
+                pos_tags_count[pos_tag] = pos_tags_count[pos_tag] + 1
+
+            if is_first_line:
+                previous_pos_tag = pos_tag
+                is_first_line = False
+            else:
+                if previous_pos_tag != " ":
+                    key = previous_pos_tag + " to " + pos_tag
+                    if key not in HMM_assum_sequences_count:
+                        HMM_assum_sequences_count[key] = 1
+                    else:
+                        HMM_assum_sequences_count[key] = HMM_assum_sequences_count[key] + 1
+                previous_pos_tag = pos_tag
+
+            if emission_key not in pos_tags_to_words_count:
+                pos_tags_to_words_count[emission_key] = 1
+            else:
+                pos_tags_to_words_count[emission_key] = pos_tags_to_words_count[emission_key] + 1
+
+
+
+        else:
+            previous_pos_tag = " "
+
+    train_file.close()
+
+    output_vocab_txt()
+
+    return
+
+
+def generate_transition_dict():
+    transition_temp = {}
+
+    for key, value in HMM_assum_sequences_count.items():
+        first_pos_tag = key.split(" ")[0]
+        second_pos_tag = key.split(" ")[2]
+        transition_key = "(" + first_pos_tag + "," + second_pos_tag + ")"
+        transition_temp[transition_key] = value / pos_tags_count[first_pos_tag]
+
+    return transition_temp
+
+
+def generate_emission_dict():
+    emission_temp = {}
+
+    for key, value in pos_tags_to_words_count.items():
+        post_tag = key.split(" ")[0]
+        word = key.split(" ")[2]
+        emission_key = "(" + post_tag + "," + word + ")"
+        emission_temp[emission_key] = value / pos_tags_count[post_tag]
+
+    return emission_temp
+
+if __name__ == '__main__':
+    vocab = {}
+    pos_tags_count = {}
+    HMM_assum_sequences_count = {}
+    pos_tags_to_words_count = {}
+
+    generate_vocab_and_pos_tags_dicts()
+    transition = generate_transition_dict()
+    emission = generate_emission_dict()
+
+    emission_file = open('emission_debug.txt', 'w')
+    emission_file.write(str(emission))
+    emission_file.close()
