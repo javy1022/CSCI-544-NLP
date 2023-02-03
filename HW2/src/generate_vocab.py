@@ -1,3 +1,4 @@
+import json
 THRESHOLD = 3
 
 
@@ -114,7 +115,10 @@ if __name__ == '__main__':
     generate_vocab_and_pos_tags_dicts()
     transition = generate_transition_dict()
     emission = generate_emission_dict()
-    
+
+    with open('hmm.json', 'w') as hmm_file:
+        json.dump([transition,emission], hmm_file, indent=4)
+
     """
     transition_file = open('transition_debug.txt', 'w')
     transition_file.write(str(transition))
