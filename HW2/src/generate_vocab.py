@@ -1,4 +1,5 @@
 import json
+
 THRESHOLD = 3
 
 
@@ -107,6 +108,7 @@ def generate_emission_dict():
 
 
 if __name__ == '__main__':
+    """
     vocab = {}
     pos_tags_count = {}
     HMM_assum_sequences_count = {}
@@ -118,4 +120,36 @@ if __name__ == '__main__':
 
     with open('hmm.json', 'w') as hmm_file:
         json.dump([transition,emission], hmm_file, indent=4)
+    """
+    # Greedy decoding
+    with open('hmm.json', 'r') as hmm_file, open('debug.txt', 'r') as dev_file:
+        hmm_dicts = json.load(hmm_file)
+        total_words_predicted = 0
+        correct_prediction_counts = 0
 
+        is_first_line = True
+        previous_correct_pos_tag = ""
+
+        while True:
+            line = dev_file.readline()
+            if not line:
+                print("eof")
+                break
+            if line.strip():
+                correct_pos_tag = line.split("\t")[2].strip()
+
+                word_to_predict = line.split("\t")[1].strip()
+
+                if is_first_line:
+                    previous_correct_pos_tag = correct_pos_tag
+                    is_first_line = False
+                else:
+                    if(previous_correct_pos_tag != " "):
+
+                    else:
+
+                    previous_correct_pos_tag = correct_pos_tag
+
+            else:
+                previous_correct_pos_tag = " "
+                print("blank")
