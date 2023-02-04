@@ -113,7 +113,7 @@ def generate_emission_dict():
 
 
 if __name__ == '__main__':
-    """
+    
     vocab = {}
     pos_tags_count = {}
     HMM_assum_sequences_count = {}
@@ -125,8 +125,8 @@ if __name__ == '__main__':
 
     with open('hmm.json', 'w') as hmm_file:
         json.dump([transition,emission], hmm_file, indent=4)
-    """
     
+    """
     # Greedy decoding
     with open('hmm.json', 'r') as hmm_file, open('debug.txt', 'r') as dev_file:
         hmm_dicts = json.load(hmm_file)
@@ -151,6 +151,18 @@ if __name__ == '__main__':
                     is_first_line = False
                 else:
                     if(previous_correct_pos_tag != " "):
+                        highest_prob_pos_tag = [0,"None"]
+                        for pos_tag in PENN_TREE_BANK_TAGSET:
+                            transition_key =  "(" + previous_correct_pos_tag + "," + pos_tag + ")"
+
+                            if  transition_key not in hmm_dicts[0]:
+                                transition_prob = 0
+                            else:
+                                transition_prob = hmm_dicts[0][transition_key]
+
+
+                            emission_key =  "(" + pos_tag + "," + word_to_predict + ")"
+                            emission_prob = hmm_dicts[1][emission_key]
 
                     else:
 
@@ -159,4 +171,4 @@ if __name__ == '__main__':
             else:
                 previous_correct_pos_tag = " "
                 print("blank")
-   
+    """
