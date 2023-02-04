@@ -1,6 +1,6 @@
 import json
 
-TRAIN_FILE = "debug.txt"
+TRAIN_FILE = "train.txt"
 THRESHOLD = 3
 PENN_TREE_BANK_TAGSET = ["CC", "CD", "DT", "EX", "FW", "IN", "JJ", "JJR", "JJS", "LS",
                          "MD", "NN", "NNS", "NNP", "NNPS", "PDT", "POS", "PRP", "PRP$",
@@ -70,16 +70,12 @@ def generate_pos_tags_dicts():
             pos_tag = line.split("\t")[2].strip()
             dict_add(pos_tag, pos_tags_count)
 
-
-            if(vocab[word] < THRESHOLD):
+            if (vocab[word] < THRESHOLD):
                 emission_key = pos_tag + " to " + "<unk>"
                 dict_add(emission_key, pos_tags_to_words_count)
             else:
                 emission_key = pos_tag + " to " + word
                 dict_add(emission_key, pos_tags_to_words_count)
-
-
-
 
             # add element to HMM dict
             if is_first_line:
@@ -144,18 +140,16 @@ if __name__ == '__main__':
     emission = generate_emission_dict()
 
     with open('hmm.json', 'w') as hmm_file:
-        json.dump([transition,emission], hmm_file, indent=4)
-
+        json.dump([transition, emission], hmm_file, indent=4)
 
     # Greedy decoding
-    with open('hmm.json', 'r') as hmm_file, open('debug.txt', 'r') as dev_file:
+    with open('hmm.json', 'r') as hmm_file, open('dev.txt', 'r') as dev_file:
         hmm_dicts = json.load(hmm_file)
         total_words_predicted = 0
         correct_prediction_counts = 0
 
         is_first_line = True
         previous_correct_pos_tag = ""
-
 
         while True:
             line = dev_file.readline()
@@ -171,37 +165,33 @@ if __name__ == '__main__':
                     previous_correct_pos_tag = correct_pos_tag
                     is_first_line = False
                 else:
-                    if(previous_correct_pos_tag != " "):
-                        highest_prob_pos_tag = [0,"None"]
+                    if previous_correct_pos_tag != " ":
+                        highest_prob_pos_tag = [0, "None"]
                         for pos_tag in PENN_TREE_BANK_TAGSET:
-                            transition_key =  "(" + previous_correct_pos_tag + "," + pos_tag + ")"
+                            transition_key = "(" + previous_correct_pos_tag + "," + pos_tag + ")"
 
-                            if  (transition_key not in hmm_dicts[0]) or (word_to_predict not in vocab):
-
+                            if (transition_key not in hmm_dicts[0]) or (word_to_predict not in vocab):
                                 continue
                             else:
-                               if vocab[word_to_predict] < THRESHOLD:
-                                   emission_key = "(" + pos_tag + "," + "<unk>" + ")"
+                                if vocab[word_to_predict] < THRESHOLD:
+                                    emission_key = "(" + pos_tag + "," + "<unk>" + ")"
 
-                                   print(emission_key + " , " + word_to_predict)
+                                    if emission_key not in hmm_dicts[1]:
+                                        continue
+                                    else:
 
-                                   if emission_key not in hmm_dicts[1]:
+                                        emission_prob = hmm_dicts[1][emission_key]
 
-                                       continue
-                                   else:
-                                       emission_prob = hmm_dicts[1][emission_key]
+                                else:
+                                    emission_key = "(" + pos_tag + "," + word_to_predict + ")"
+                                    if emission_key not in hmm_dicts[1]:
 
-                               else:
-                                   emission_key =  "(" + pos_tag + "," + word_to_predict + ")"
-                                   if emission_key not in hmm_dicts[1]:
-                                       print("skipped 3")
-                                       continue
-                                   else:
-                                       emission_prob = hmm_dicts[1][emission_key]
+                                        continue
+                                    else:
 
+                                        emission_prob = hmm_dicts[1][emission_key]
 
-                               transition_prob = hmm_dicts[0][transition_key]
-                              
+                                transition_prob = hmm_dicts[0][transition_key]
 
                     else:
                         print("previous blank")
@@ -210,4 +200,3 @@ if __name__ == '__main__':
             else:
                 previous_correct_pos_tag = " "
                 print("blank")
-
