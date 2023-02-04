@@ -1,6 +1,11 @@
 import json
 
+
 THRESHOLD = 3
+PENN_TREE_BANK_TAGSET = ["CC","CD","DT","EX","FW","IN","JJ","JJR","JJS","LS",
+                         "MD","NN","NNS","NNP","NNPS","PDT","POS","PRP","PRP$",
+                         "RB","RBR","RBS","RP","SYM","TO","UH","VB","VBD","VBG","VBN","VBP",
+                         "VBZ","WDT","WP","WP$","WRB","$","#","``","''","(",")",",",".",":"]
 
 
 def output_vocab_txt():
@@ -121,6 +126,7 @@ if __name__ == '__main__':
     with open('hmm.json', 'w') as hmm_file:
         json.dump([transition,emission], hmm_file, indent=4)
     """
+    
     # Greedy decoding
     with open('hmm.json', 'r') as hmm_file, open('debug.txt', 'r') as dev_file:
         hmm_dicts = json.load(hmm_file)
@@ -153,3 +159,4 @@ if __name__ == '__main__':
             else:
                 previous_correct_pos_tag = " "
                 print("blank")
+   
