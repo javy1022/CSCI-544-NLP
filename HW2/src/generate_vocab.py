@@ -128,6 +128,32 @@ def generate_emission_dict():
     return emission_temp
 
 
+def predicted_pos_tag(word):
+    highest_prob_pos_tag = [0, "None"]
+    for pos_tag in PENN_TREE_BANK_TAGSET:
+        transition_key = "(" + previous_correct_pos_tag + "," + pos_tag + ")"
+
+        if (transition_key not in hmm_dicts[0]) or (word_to_predict not in vocab):
+            continue
+        else:
+            if vocab[word_to_predict] < THRESHOLD:
+                emission_key = "(" + pos_tag + "," + "<unk>" + ")"
+
+                if emission_key not in hmm_dicts[1]:
+                    continue
+                else:
+                    emission_prob = hmm_dicts[1][emission_key]
+
+            else:
+                emission_key = "(" + pos_tag + "," + word_to_predict + ")"
+                if emission_key not in hmm_dicts[1]:
+                    continue
+                else:
+                    emission_prob = hmm_dicts[1][emission_key]
+
+            transition_prob = hmm_dicts[0][transition_key]
+
+
 if __name__ == '__main__':
     vocab = {}
     pos_tags_count = {}
@@ -166,33 +192,7 @@ if __name__ == '__main__':
                     is_first_line = False
                 else:
                     if previous_correct_pos_tag != " ":
-                        highest_prob_pos_tag = [0, "None"]
-                        for pos_tag in PENN_TREE_BANK_TAGSET:
-                            transition_key = "(" + previous_correct_pos_tag + "," + pos_tag + ")"
-
-                            if (transition_key not in hmm_dicts[0]) or (word_to_predict not in vocab):
-                                continue
-                            else:
-                                if vocab[word_to_predict] < THRESHOLD:
-                                    emission_key = "(" + pos_tag + "," + "<unk>" + ")"
-
-                                    if emission_key not in hmm_dicts[1]:
-                                        continue
-                                    else:
-
-                                        emission_prob = hmm_dicts[1][emission_key]
-
-                                else:
-                                    emission_key = "(" + pos_tag + "," + word_to_predict + ")"
-                                    if emission_key not in hmm_dicts[1]:
-
-                                        continue
-                                    else:
-
-                                        emission_prob = hmm_dicts[1][emission_key]
-
-                                transition_prob = hmm_dicts[0][transition_key]
-
+                        predicted_pos_tag(word_to_predict)
                     else:
                         print("previous blank")
                     previous_correct_pos_tag = correct_pos_tag
