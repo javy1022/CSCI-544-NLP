@@ -119,12 +119,3 @@ if __name__ == '__main__':
     with open('hmm.json', 'w') as hmm_file:
         json.dump([transition,emission], hmm_file, indent=4)
 
-    """
-    transition_file = open('transition_debug.txt', 'w')
-    transition_file.write(str(transition))
-    transition_file.close()
-   
-    emission_file = open('emission_debug.txt', 'w')
-    emission_file.write(str(emission))
-    emission_file.close()
-    """
