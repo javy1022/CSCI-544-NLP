@@ -1,11 +1,10 @@
 import json
 
-
 THRESHOLD = 3
-PENN_TREE_BANK_TAGSET = ["CC","CD","DT","EX","FW","IN","JJ","JJR","JJS","LS",
-                         "MD","NN","NNS","NNP","NNPS","PDT","POS","PRP","PRP$",
-                         "RB","RBR","RBS","RP","SYM","TO","UH","VB","VBD","VBG","VBN","VBP",
-                         "VBZ","WDT","WP","WP$","WRB","$","#","``","''","(",")",",",".",":"]
+PENN_TREE_BANK_TAGSET = ["CC", "CD", "DT", "EX", "FW", "IN", "JJ", "JJR", "JJS", "LS",
+                         "MD", "NN", "NNS", "NNP", "NNPS", "PDT", "POS", "PRP", "PRP$",
+                         "RB", "RBR", "RBS", "RP", "SYM", "TO", "UH", "VB", "VBD", "VBG", "VBN", "VBP",
+                         "VBZ", "WDT", "WP", "WP$", "WRB", "$", "#", "``", "''", "(", ")", ",", ".", ":"]
 
 
 def output_vocab_txt():
@@ -34,8 +33,22 @@ def dict_add(dict_key, dict_name):
         dict_name[dict_key] = dict_name[dict_key] + 1
 
 
-def generate_vocab_and_pos_tags_dicts():
-    train_file = open('train.txt', 'r')
+def generate_vocab():
+    train_file = open('debug.txt', 'r')
+    while True:
+        line = train_file.readline()
+        if not line:
+            break
+        if line.strip():
+            word = line.split("\t")[1].strip()
+            dict_add(word, vocab)
+    train_file.close()
+    output_vocab_txt()
+    return
+
+
+def generate_pos_tags_dicts():
+    train_file = open('debug.txt', 'r')
 
     previous_pos_tag = ""
     is_first_line = True
@@ -54,11 +67,19 @@ def generate_vocab_and_pos_tags_dicts():
         if line.strip():
             word = line.split("\t")[1].strip()
             pos_tag = line.split("\t")[2].strip()
-            emission_key = pos_tag + " to " + word
-
-            dict_add(word, vocab)
             dict_add(pos_tag, pos_tags_count)
-            dict_add(emission_key, pos_tags_to_words_count)
+
+
+            if(vocab[word] < THRESHOLD):
+                emission_key = pos_tag + " to " + "<unk>"
+                dict_add(emission_key, pos_tags_to_words_count)
+            else:
+                emission_key = pos_tag + " to " + word
+                dict_add(emission_key, pos_tags_to_words_count)
+
+
+
+
             # add element to HMM dict
             if is_first_line:
                 # edge case
@@ -83,8 +104,6 @@ def generate_vocab_and_pos_tags_dicts():
             previous_pos_tag = " "
 
     train_file.close()
-
-    output_vocab_txt()
     return
 
 
@@ -113,19 +132,19 @@ def generate_emission_dict():
 
 
 if __name__ == '__main__':
-    
     vocab = {}
     pos_tags_count = {}
     HMM_assum_sequences_count = {}
     pos_tags_to_words_count = {}
 
-    generate_vocab_and_pos_tags_dicts()
+    generate_vocab()
+    generate_pos_tags_dicts()
     transition = generate_transition_dict()
     emission = generate_emission_dict()
 
     with open('hmm.json', 'w') as hmm_file:
         json.dump([transition,emission], hmm_file, indent=4)
-    
+
     """
     # Greedy decoding
     with open('hmm.json', 'r') as hmm_file, open('debug.txt', 'r') as dev_file:
