@@ -1,13 +1,11 @@
 import json
 
 TRAIN_FILE = "train.txt"
-THRESHOLD = 1
+THRESHOLD = 2
 PENN_TREE_BANK_TAGSET = ["CC", "CD", "DT", "EX", "FW", "IN", "JJ", "JJR", "JJS", "LS",
                          "MD", "NN", "NNS", "NNP", "NNPS", "PDT", "POS", "PRP", "PRP$",
                          "RB", "RBR", "RBS", "RP", "SYM", "TO", "UH", "VB", "VBD", "VBG", "VBN", "VBP",
                          "VBZ", "WDT", "WP", "WP$", "WRB", "$", "#", "``", "''", "(", ")", ",", ".", ":"]
-
-
 
 
 def output_vocab_txt():
@@ -134,11 +132,18 @@ def predict_pos_tag(word, is_first_line, hmm_dicts, previous_correct_pos_tag):
         else:
             transition_key = "(" + previous_correct_pos_tag + "," + pos_tag + ")"
 
-        if (transition_key not in hmm_dicts[0]) or (word not in vocab):
+        if (transition_key not in hmm_dicts[0]) :
 
             continue
         else:
-            if vocab[word] < THRESHOLD:
+            if word not in vocab:
+                emission_key = "(" + pos_tag + "," + "<unk>" + ")"
+
+                if emission_key not in hmm_dicts[1]:
+                    continue
+                else:
+                    emission_prob = hmm_dicts[1][emission_key]
+            elif vocab[word] < THRESHOLD:
                 emission_key = "(" + pos_tag + "," + "<unk>" + ")"
 
                 if emission_key not in hmm_dicts[1]:
@@ -147,6 +152,7 @@ def predict_pos_tag(word, is_first_line, hmm_dicts, previous_correct_pos_tag):
                     emission_prob = hmm_dicts[1][emission_key]
 
             else:
+
                 emission_key = "(" + pos_tag + "," + word + ")"
                 if emission_key not in hmm_dicts[1]:
                     continue
@@ -221,5 +227,3 @@ if __name__ == '__main__':
         json.dump([transition, emission], hmm_file, indent=4)
 
     greedy_decoding_acc("dev.txt", "hmm.json")
-
-
