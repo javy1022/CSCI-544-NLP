@@ -131,7 +131,10 @@ def generate_emission_dict():
 def predict_pos_tag(word):
     highest_prob_pos_tag = [0, "N/A"]
     for pos_tag in PENN_TREE_BANK_TAGSET:
-        transition_key = "(" + previous_correct_pos_tag + "," + pos_tag + ")"
+        if is_first_line:
+            transition_key = "(" + "START" + "," + pos_tag + ")"
+        else:
+            transition_key = "(" + previous_correct_pos_tag + "," + pos_tag + ")"
 
         if (transition_key not in hmm_dicts[0]) or (word not in vocab):
             continue
@@ -154,14 +157,15 @@ def predict_pos_tag(word):
             transition_prob = hmm_dicts[0][transition_key]
             pos_tag_prob = [transition_prob * emission_prob, pos_tag]
 
-            print("candidate = " +  str(pos_tag_prob))
+            print("candidate = " + str(pos_tag_prob))
 
-            if pos_tag_prob[0] >  highest_prob_pos_tag[0]:
+            if pos_tag_prob[0] > highest_prob_pos_tag[0]:
                 highest_prob_pos_tag[0] = pos_tag_prob[0]
                 highest_prob_pos_tag[1] = pos_tag_prob[1]
-                print("updated highest = " + str(highest_prob_pos_tag) )
+                print("updated highest = " + str(highest_prob_pos_tag))
 
     return highest_prob_pos_tag[1]
+
 
 if __name__ == '__main__':
     vocab = {}
@@ -197,11 +201,13 @@ if __name__ == '__main__':
                 word_to_predict = line.split("\t")[1].strip()
 
                 if is_first_line:
+                    predict_pos_tag(word_to_predict)
                     previous_correct_pos_tag = correct_pos_tag
                     is_first_line = False
                 else:
                     if previous_correct_pos_tag != " ":
                         predict_pos_tag(word_to_predict)
+
                     else:
                         print("previous blank")
                     previous_correct_pos_tag = correct_pos_tag
