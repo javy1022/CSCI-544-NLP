@@ -128,15 +128,15 @@ def generate_emission_dict():
     return emission_temp
 
 
-def predicted_pos_tag(word):
-    highest_prob_pos_tag = [0, "None"]
+def predict_pos_tag(word):
+    highest_prob_pos_tag = [0, "N/A"]
     for pos_tag in PENN_TREE_BANK_TAGSET:
         transition_key = "(" + previous_correct_pos_tag + "," + pos_tag + ")"
 
-        if (transition_key not in hmm_dicts[0]) or (word_to_predict not in vocab):
+        if (transition_key not in hmm_dicts[0]) or (word not in vocab):
             continue
         else:
-            if vocab[word_to_predict] < THRESHOLD:
+            if vocab[word] < THRESHOLD:
                 emission_key = "(" + pos_tag + "," + "<unk>" + ")"
 
                 if emission_key not in hmm_dicts[1]:
@@ -145,14 +145,23 @@ def predicted_pos_tag(word):
                     emission_prob = hmm_dicts[1][emission_key]
 
             else:
-                emission_key = "(" + pos_tag + "," + word_to_predict + ")"
+                emission_key = "(" + pos_tag + "," + word + ")"
                 if emission_key not in hmm_dicts[1]:
                     continue
                 else:
                     emission_prob = hmm_dicts[1][emission_key]
 
             transition_prob = hmm_dicts[0][transition_key]
+            pos_tag_prob = [transition_prob * emission_prob, pos_tag]
 
+            print("candidate = " +  str(pos_tag_prob))
+
+            if pos_tag_prob[0] >  highest_prob_pos_tag[0]:
+                highest_prob_pos_tag[0] = pos_tag_prob[0]
+                highest_prob_pos_tag[1] = pos_tag_prob[1]
+                print("updated highest = " + str(highest_prob_pos_tag) )
+
+    return highest_prob_pos_tag[1]
 
 if __name__ == '__main__':
     vocab = {}
@@ -192,7 +201,7 @@ if __name__ == '__main__':
                     is_first_line = False
                 else:
                     if previous_correct_pos_tag != " ":
-                        predicted_pos_tag(word_to_predict)
+                        predict_pos_tag(word_to_predict)
                     else:
                         print("previous blank")
                     previous_correct_pos_tag = correct_pos_tag
