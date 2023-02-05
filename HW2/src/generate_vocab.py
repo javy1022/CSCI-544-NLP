@@ -54,15 +54,12 @@ def generate_pos_tags_dicts():
     previous_pos_tag = ""
     is_first_line = True
     pos_tags_count["START"] = 1
-    pos_tags_count["END"] = 1
 
     while True:
         line = train_file.readline()
         # if eof
         if not line:
             # edge case
-            key = previous_pos_tag + " to " + "END"
-            dict_add(key, HMM_assum_sequences_count)
             break
         # if line not empty
         if line.strip():
@@ -95,9 +92,6 @@ def generate_pos_tags_dicts():
         # if line is empty
         else:
             pos_tags_count["START"] = pos_tags_count["START"] + 1
-            pos_tags_count["END"] = pos_tags_count["END"] + 1
-            key = previous_pos_tag + " to " + "END"
-            dict_add(key, HMM_assum_sequences_count)
             previous_pos_tag = " "
 
     train_file.close()
@@ -131,7 +125,8 @@ def generate_emission_dict():
 def predict_pos_tag(word):
     highest_prob_pos_tag = [0, "N/A"]
     for pos_tag in PENN_TREE_BANK_TAGSET:
-        if is_first_line:
+
+        if is_first_line or previous_correct_pos_tag == " ":
             transition_key = "(" + "START" + "," + pos_tag + ")"
         else:
             transition_key = "(" + previous_correct_pos_tag + "," + pos_tag + ")"
@@ -182,7 +177,7 @@ if __name__ == '__main__':
         json.dump([transition, emission], hmm_file, indent=4)
 
     # Greedy decoding
-    with open('hmm.json', 'r') as hmm_file, open('dev.txt', 'r') as dev_file:
+    with open('hmm.json', 'r') as hmm_file, open('mini_dev.txt', 'r') as dev_file:
         hmm_dicts = json.load(hmm_file)
         total_words_predicted = 0
         correct_prediction_counts = 0
@@ -193,7 +188,6 @@ if __name__ == '__main__':
         while True:
             line = dev_file.readline()
             if not line:
-                print("eof")
                 break
             if line.strip():
                 correct_pos_tag = line.split("\t")[2].strip()
@@ -205,13 +199,9 @@ if __name__ == '__main__':
                     previous_correct_pos_tag = correct_pos_tag
                     is_first_line = False
                 else:
-                    if previous_correct_pos_tag != " ":
-                        predict_pos_tag(word_to_predict)
-
-                    else:
-                        print("previous blank")
+                    predict_pos_tag(word_to_predict)
                     previous_correct_pos_tag = correct_pos_tag
 
             else:
+
                 previous_correct_pos_tag = " "
-                print("blank")
