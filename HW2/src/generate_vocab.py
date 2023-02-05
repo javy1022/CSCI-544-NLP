@@ -67,7 +67,7 @@ def generate_pos_tags_dicts():
             pos_tag = line.split("\t")[2].strip()
             dict_add(pos_tag, pos_tags_count)
 
-            if (vocab[word] < THRESHOLD):
+            if vocab[word] < THRESHOLD:
                 emission_key = pos_tag + " to " + "<unk>"
                 dict_add(emission_key, pos_tags_to_words_count)
             else:
@@ -122,7 +122,7 @@ def generate_emission_dict():
     return emission_temp
 
 
-def predict_pos_tag(word):
+def predict_pos_tag(word, is_first_line, hmm_dicts, previous_correct_pos_tag):
     highest_prob_pos_tag = [0, "N/A"]
     for pos_tag in PENN_TREE_BANK_TAGSET:
 
@@ -152,14 +152,53 @@ def predict_pos_tag(word):
             transition_prob = hmm_dicts[0][transition_key]
             pos_tag_prob = [transition_prob * emission_prob, pos_tag]
 
-            print("candidate = " + str(pos_tag_prob))
-
             if pos_tag_prob[0] > highest_prob_pos_tag[0]:
                 highest_prob_pos_tag[0] = pos_tag_prob[0]
                 highest_prob_pos_tag[1] = pos_tag_prob[1]
-                print("updated highest = " + str(highest_prob_pos_tag))
 
     return highest_prob_pos_tag[1]
+
+
+def greedy_decoding_acc(input_file, hmm_graph):
+    # Greedy decoding
+    with open(hmm_graph, 'r') as hmm_graph_obj, open(input_file, 'r') as input_file_obj:
+        hmm_dicts = json.load(hmm_graph_obj)
+        total_words_predicted = 0
+        correct_prediction_counts = 0
+
+        is_first_line = True
+        previous_correct_pos_tag = ""
+
+        while True:
+            line = input_file_obj.readline()
+            if not line:
+                break
+            if line.strip():
+                correct_pos_tag = line.split("\t")[2].strip()
+
+                word_to_predict = line.split("\t")[1].strip()
+
+                if is_first_line:
+                    total_words_predicted = total_words_predicted + 1
+                    predicted_pos_tag = predict_pos_tag(word_to_predict, is_first_line, hmm_dicts,
+                                                        previous_correct_pos_tag)
+                    previous_correct_pos_tag = correct_pos_tag
+                    is_first_line = False
+
+                    if predicted_pos_tag == correct_pos_tag:
+                        correct_prediction_counts = correct_prediction_counts + 1
+                else:
+                    total_words_predicted = total_words_predicted + 1
+                    predicted_pos_tag = predict_pos_tag(word_to_predict, is_first_line, hmm_dicts,
+                                                        previous_correct_pos_tag)
+                    previous_correct_pos_tag = correct_pos_tag
+
+                    if predicted_pos_tag == correct_pos_tag:
+                        correct_prediction_counts = correct_prediction_counts + 1
+            else:
+
+                previous_correct_pos_tag = " "
+        print("Greedy Decoding Accuracy (" + input_file + ") = " + str(correct_prediction_counts / total_words_predicted))
 
 
 if __name__ == '__main__':
@@ -176,32 +215,4 @@ if __name__ == '__main__':
     with open('hmm.json', 'w') as hmm_file:
         json.dump([transition, emission], hmm_file, indent=4)
 
-    # Greedy decoding
-    with open('hmm.json', 'r') as hmm_file, open('mini_dev.txt', 'r') as dev_file:
-        hmm_dicts = json.load(hmm_file)
-        total_words_predicted = 0
-        correct_prediction_counts = 0
-
-        is_first_line = True
-        previous_correct_pos_tag = ""
-
-        while True:
-            line = dev_file.readline()
-            if not line:
-                break
-            if line.strip():
-                correct_pos_tag = line.split("\t")[2].strip()
-
-                word_to_predict = line.split("\t")[1].strip()
-
-                if is_first_line:
-                    predict_pos_tag(word_to_predict)
-                    previous_correct_pos_tag = correct_pos_tag
-                    is_first_line = False
-                else:
-                    predict_pos_tag(word_to_predict)
-                    previous_correct_pos_tag = correct_pos_tag
-
-            else:
-
-                previous_correct_pos_tag = " "
+    greedy_decoding_acc("dev.txt", "hmm.json")
