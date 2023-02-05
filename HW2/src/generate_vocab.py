@@ -1,11 +1,13 @@
 import json
 
 TRAIN_FILE = "train.txt"
-THRESHOLD = 3
+THRESHOLD = 1
 PENN_TREE_BANK_TAGSET = ["CC", "CD", "DT", "EX", "FW", "IN", "JJ", "JJR", "JJS", "LS",
                          "MD", "NN", "NNS", "NNP", "NNPS", "PDT", "POS", "PRP", "PRP$",
                          "RB", "RBR", "RBS", "RP", "SYM", "TO", "UH", "VB", "VBD", "VBG", "VBN", "VBP",
                          "VBZ", "WDT", "WP", "WP$", "WRB", "$", "#", "``", "''", "(", ")", ",", ".", ":"]
+
+
 
 
 def output_vocab_txt():
@@ -124,6 +126,7 @@ def generate_emission_dict():
 
 def predict_pos_tag(word, is_first_line, hmm_dicts, previous_correct_pos_tag):
     highest_prob_pos_tag = [0, "N/A"]
+
     for pos_tag in PENN_TREE_BANK_TAGSET:
 
         if is_first_line or previous_correct_pos_tag == " ":
@@ -132,6 +135,7 @@ def predict_pos_tag(word, is_first_line, hmm_dicts, previous_correct_pos_tag):
             transition_key = "(" + previous_correct_pos_tag + "," + pos_tag + ")"
 
         if (transition_key not in hmm_dicts[0]) or (word not in vocab):
+
             continue
         else:
             if vocab[word] < THRESHOLD:
@@ -198,7 +202,8 @@ def greedy_decoding_acc(input_file, hmm_graph):
             else:
 
                 previous_correct_pos_tag = " "
-        print("Greedy Decoding Accuracy (" + input_file + ") = " + str(correct_prediction_counts / total_words_predicted))
+        print(
+            "Greedy Decoding Accuracy (" + input_file + ") = " + str(correct_prediction_counts / total_words_predicted))
 
 
 if __name__ == '__main__':
@@ -216,3 +221,5 @@ if __name__ == '__main__':
         json.dump([transition, emission], hmm_file, indent=4)
 
     greedy_decoding_acc("dev.txt", "hmm.json")
+
+
