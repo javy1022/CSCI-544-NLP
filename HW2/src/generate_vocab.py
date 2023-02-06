@@ -33,7 +33,6 @@ def output_vocab_txt():
         print("Vocabulary total size : " + str(index + 1))
     print("Total occurrences of <unk> : " + str(unknown_count) + "\n")
 
-
     vocab_file.close()
 
 
@@ -135,15 +134,15 @@ def generate_emission_dict():
     return emission_temp
 
 
-def predict_pos_tag(word, is_first_line, hmm_dicts, previous_correct_pos_tag):
+def predict_pos_tag(word, is_first_line, hmm_dicts, previous_predicted_pos_tag):
     highest_prob_pos_tag = [0, "N/A"]
 
     for pos_tag in PENN_TREE_BANK_TAGSET:
 
-        if is_first_line or previous_correct_pos_tag == " ":
+        if is_first_line or previous_predicted_pos_tag == " ":
             transition_key = "(" + "START" + "," + pos_tag + ")"
         else:
-            transition_key = "(" + previous_correct_pos_tag + "," + pos_tag + ")"
+            transition_key = "(" + previous_predicted_pos_tag + "," + pos_tag + ")"
 
         if transition_key not in hmm_dicts[0]:
 
@@ -190,7 +189,7 @@ def greedy_decoding_acc(input_file, hmm_graph):
         correct_prediction_counts = 0
 
         is_first_line = True
-        previous_correct_pos_tag = ""
+        previous_predicted_pos_tag = ""
 
         while True:
             line = input_file_obj.readline()
@@ -203,28 +202,32 @@ def greedy_decoding_acc(input_file, hmm_graph):
 
                 if is_first_line:
                     total_words_predicted = total_words_predicted + 1
+
                     predicted_pos_tag = predict_pos_tag(word_to_predict, is_first_line, hmm_dicts,
-                                                        previous_correct_pos_tag)
-                    previous_correct_pos_tag = correct_pos_tag
+                                                        previous_predicted_pos_tag)
+                    previous_predicted_pos_tag = predicted_pos_tag
                     is_first_line = False
 
                     if predicted_pos_tag == correct_pos_tag:
                         correct_prediction_counts = correct_prediction_counts + 1
+
                 else:
                     total_words_predicted = total_words_predicted + 1
+
                     predicted_pos_tag = predict_pos_tag(word_to_predict, is_first_line, hmm_dicts,
-                                                        previous_correct_pos_tag)
-                    previous_correct_pos_tag = correct_pos_tag
+                                                        previous_predicted_pos_tag)
+                    previous_predicted_pos_tag = predicted_pos_tag
 
                     if predicted_pos_tag == correct_pos_tag:
                         correct_prediction_counts = correct_prediction_counts + 1
             else:
 
-                previous_correct_pos_tag = " "
+                previous_predicted_pos_tag = " "
         print("##### Task 3 #####")
         print(
             "Greedy Decoding Accuracy (" + input_file + ") = " + str(correct_prediction_counts / total_words_predicted))
         print("\n")
+
 
 if __name__ == '__main__':
     vocab = {}
