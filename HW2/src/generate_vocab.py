@@ -181,13 +181,16 @@ def predict_pos_tag(word, is_first_line, hmm_dicts, previous_predicted_pos_tag):
     return highest_prob_pos_tag[1]
 
 
-def greedy_decoding_acc(input_file, hmm_graph):
-    # Greedy decoding
-    with open(hmm_graph, 'r') as hmm_graph_obj, open(input_file, 'r') as input_file_obj:
-        hmm_dicts = json.load(hmm_graph_obj)
+def greedy_decoding(input_file, hmm_graph, output=False):
+    if output:
+        output_file = open("greedy.out.txt", 'w')
+    else:
         total_words_predicted = 0
         correct_prediction_counts = 0
 
+    # Greedy decoding
+    with open(hmm_graph, 'r') as hmm_graph_obj, open(input_file, 'r') as input_file_obj:
+        hmm_dicts = json.load(hmm_graph_obj)
         is_first_line = True
         previous_predicted_pos_tag = ""
 
@@ -196,37 +199,51 @@ def greedy_decoding_acc(input_file, hmm_graph):
             if not line:
                 break
             if line.strip():
-                correct_pos_tag = line.split("\t")[2].strip()
+                if not output:
+                    correct_pos_tag = line.split("\t")[2].strip()
 
                 word_to_predict = line.split("\t")[1].strip()
 
                 if is_first_line:
-                    total_words_predicted = total_words_predicted + 1
-
                     predicted_pos_tag = predict_pos_tag(word_to_predict, is_first_line, hmm_dicts,
                                                         previous_predicted_pos_tag)
+
+                    if not output:
+                        total_words_predicted = total_words_predicted + 1
+                        if predicted_pos_tag == correct_pos_tag:
+                            correct_prediction_counts = correct_prediction_counts + 1
+                    else:
+                        output_line = line + "\t" + predicted_pos_tag
+                        output_file.write("\t".join(output_line.split()) + "\n")
+
                     previous_predicted_pos_tag = predicted_pos_tag
                     is_first_line = False
-
-                    if predicted_pos_tag == correct_pos_tag:
-                        correct_prediction_counts = correct_prediction_counts + 1
-
                 else:
-                    total_words_predicted = total_words_predicted + 1
-
                     predicted_pos_tag = predict_pos_tag(word_to_predict, is_first_line, hmm_dicts,
                                                         previous_predicted_pos_tag)
-                    previous_predicted_pos_tag = predicted_pos_tag
 
-                    if predicted_pos_tag == correct_pos_tag:
-                        correct_prediction_counts = correct_prediction_counts + 1
+                    if not output:
+                        total_words_predicted = total_words_predicted + 1
+                        if predicted_pos_tag == correct_pos_tag:
+                            correct_prediction_counts = correct_prediction_counts + 1
+                    else:
+                        output_line = line + "\t" + predicted_pos_tag
+                        output_file.write("\t".join(output_line.split()) + "\n")
+
+                    previous_predicted_pos_tag = predicted_pos_tag
             else:
+                if output:
+                    output_file.write("\n")
 
                 previous_predicted_pos_tag = " "
+
+    if not output:
         print("##### Task 3 #####")
         print(
             "Greedy Decoding Accuracy (" + input_file + ") = " + str(correct_prediction_counts / total_words_predicted))
         print("\n")
+    else:
+        output_file.close()
 
 
 if __name__ == '__main__':
@@ -243,4 +260,5 @@ if __name__ == '__main__':
     with open('hmm.json', 'w') as hmm_file:
         json.dump([transition, emission], hmm_file, indent=4)
 
-    greedy_decoding_acc("dev.txt", "hmm.json")
+    greedy_decoding("dev.txt", "hmm.json")
+    greedy_decoding("test.txt", "hmm.json", output=True)
