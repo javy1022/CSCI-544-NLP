@@ -10,6 +10,7 @@ PENN_TREE_BANK_TAGSET = ["CC", "CD", "DT", "EX", "FW", "IN", "JJ", "JJR", "JJS",
 
 def output_vocab_txt():
     unknown_count = 0
+
     for w in vocab:
         if vocab[w] < THRESHOLD:
             unknown_count = unknown_count + vocab[w]
@@ -23,6 +24,15 @@ def output_vocab_txt():
         if vocab[w] >= THRESHOLD:
             index = index + 1
             vocab_file.write(w + "\t" + str(index) + "\t" + str(vocab[w]) + "\n")
+
+    print("##### Task 1 #####")
+    print("Selected threshold : " + str(THRESHOLD))
+    if unknown_count == 0:
+        print("Vocabulary total size : " + str(index))
+    else:
+        print("Vocabulary total size : " + str(index + 1))
+    print("Total occurrences of <unk> : " + str(unknown_count) + "\n")
+
 
     vocab_file.close()
 
@@ -107,6 +117,8 @@ def generate_transition_dict():
         transition_key = "(" + first_pos_tag + "," + second_pos_tag + ")"
         transition_temp[transition_key] = value / pos_tags_count[first_pos_tag]
 
+    print("##### Task 2 #####")
+    print("Total transition parameters : " + str(len(transition_temp)))
     return transition_temp
 
 
@@ -119,6 +131,7 @@ def generate_emission_dict():
         emission_key = "(" + post_tag + "," + word + ")"
         emission_temp[emission_key] = value / pos_tags_count[post_tag]
 
+    print("Total emission parameters : " + str(len(emission_temp)) + "\n")
     return emission_temp
 
 
@@ -132,7 +145,7 @@ def predict_pos_tag(word, is_first_line, hmm_dicts, previous_correct_pos_tag):
         else:
             transition_key = "(" + previous_correct_pos_tag + "," + pos_tag + ")"
 
-        if (transition_key not in hmm_dicts[0]) :
+        if transition_key not in hmm_dicts[0]:
 
             continue
         else:
@@ -208,9 +221,10 @@ def greedy_decoding_acc(input_file, hmm_graph):
             else:
 
                 previous_correct_pos_tag = " "
+        print("##### Task 3 #####")
         print(
             "Greedy Decoding Accuracy (" + input_file + ") = " + str(correct_prediction_counts / total_words_predicted))
-
+        print("\n")
 
 if __name__ == '__main__':
     vocab = {}
