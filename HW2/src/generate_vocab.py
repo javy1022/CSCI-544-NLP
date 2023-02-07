@@ -272,10 +272,43 @@ def init_viterbi_matrix(viterbi_matrix_obj, sentence):
 
 def viterbi_decoding(sentence, correct_sequence_list):
     viterbi_matrix = np.zeros([len(sentence), len(PENN_TREE_BANK_TAGSET)])
+    backpointer_matrix = np.zeros([len(sentence), len(PENN_TREE_BANK_TAGSET)], dtype=int)
     # init viterbi matrix
     viterbi_matrix = init_viterbi_matrix(viterbi_matrix, sentence)
-    print(viterbi_matrix[0])
 
+    for j in range(len(PENN_TREE_BANK_TAGSET)):
+        backpointer_matrix[0][j] = 0
+    #####
+    for i in range(1, len(sentence)):
+        for j in range(len(PENN_TREE_BANK_TAGSET)):
+            highest_current_path_prob = 0
+            highest_current_path_prob_pos_tag = -1
+            for j2 in range(len(PENN_TREE_BANK_TAGSET)):
+                transition_key = "(" + PENN_TREE_BANK_TAGSET[j2] + "," + PENN_TREE_BANK_TAGSET[j] + ")"
+                emission_key = "(" + PENN_TREE_BANK_TAGSET[j] + "," + sentence[i] + ")"
+
+                if transition_key not in hmm_dicts[0]:
+                    transition_prob = 0
+                else:
+                    transition_prob = hmm_dicts[0][transition_key]
+
+                if emission_key not in hmm_dicts[1]:
+                    emission_prob = 0
+                else:
+                    emission_prob = hmm_dicts[1][emission_key]
+
+                previos_path_prob = viterbi_matrix[i - 1][j2]
+
+                current_path_prob = previos_path_prob * transition_prob * emission_prob
+                if current_path_prob > highest_current_path_prob:
+                    highest_current_path_prob = current_path_prob
+                    highest_current_path_prob_pos_tag = j2
+
+            viterbi_matrix[i][j] = highest_current_path_prob
+            backpointer_matrix[i][j] = highest_current_path_prob_pos_tag
+
+    print(viterbi_matrix[36])
+    print(backpointer_matrix[35])
 
 if __name__ == '__main__':
     vocab = {}
