@@ -246,6 +246,13 @@ def greedy_decoding(input_file, hmm_graph, output=False):
         output_file.close()
 
 
+def viterbi_decoding(sentence, correct_sequence_list):
+   
+   
+   
+   
+
+
 if __name__ == '__main__':
     vocab = {}
     pos_tags_count = {}
@@ -259,6 +266,36 @@ if __name__ == '__main__':
 
     with open('hmm.json', 'w') as hmm_file:
         json.dump([transition, emission], hmm_file, indent=4)
-
+    """
+    ################## Don't forget to change default pos_tag, current: "N/A" #########################################
     greedy_decoding("dev.txt", "hmm.json")
     greedy_decoding("test.txt", "hmm.json", output=True)
+    """
+
+    # Viterbi
+
+    with open("hmm.json", 'r') as hmm_file, open("mini_dev.txt", 'r') as input_file:
+
+        viterbi_input_sentence = ""
+        correct_pos_tag_sequence = []
+
+        while True:
+            line = input_file.readline()
+            if not line:
+                break
+            if line.strip():
+                word = line.split("\t")[1].strip()
+                correct_pos_tag = line.split("\t")[2].strip()
+
+                viterbi_input_sentence = viterbi_input_sentence + word + " "
+                correct_pos_tag_sequence.append(correct_pos_tag)
+
+
+
+            else:
+                viterbi_decoding(viterbi_input_sentence,  correct_pos_tag_sequence)
+                viterbi_input_sentence = ""
+                correct_pos_tag_sequence.clear()
+
+
+                print("blank")
