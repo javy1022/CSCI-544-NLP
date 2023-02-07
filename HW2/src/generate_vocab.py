@@ -8,6 +8,7 @@ PENN_TREE_BANK_TAGSET = ["CC", "CD", "DT", "EX", "FW", "IN", "JJ", "JJR", "JJS",
                          "RB", "RBR", "RBS", "RP", "SYM", "TO", "UH", "VB", "VBD", "VBG", "VBN", "VBP",
                          "VBZ", "WDT", "WP", "WP$", "WRB", "$", "#", "``", "''", "(", ")", ",", ".", ":"]
 
+default_pos_tag_guess = "CC"
 
 def output_vocab_txt():
     unknown_count = 0
@@ -270,7 +271,7 @@ def init_viterbi_matrix(viterbi_matrix_obj, sentence):
     return viterbi_matrix_obj
 
 
-def viterbi_decoding(sentence, correct_sequence_list):
+def viterbi_decoding(sentence):
     viterbi_matrix = np.zeros([len(sentence), len(PENN_TREE_BANK_TAGSET)])
     backpointer_matrix = np.zeros([len(sentence), len(PENN_TREE_BANK_TAGSET)], dtype=int)
     # init viterbi matrix
@@ -282,7 +283,7 @@ def viterbi_decoding(sentence, correct_sequence_list):
     for i in range(1, len(sentence)):
         for j in range(len(PENN_TREE_BANK_TAGSET)):
             highest_current_path_prob = 0
-            highest_current_path_prob_pos_tag = -1
+            highest_current_path_prob_pos_tag = 0
             for j2 in range(len(PENN_TREE_BANK_TAGSET)):
                 transition_key = "(" + PENN_TREE_BANK_TAGSET[j2] + "," + PENN_TREE_BANK_TAGSET[j] + ")"
                 emission_key = "(" + PENN_TREE_BANK_TAGSET[j] + "," + sentence[i] + ")"
@@ -292,8 +293,18 @@ def viterbi_decoding(sentence, correct_sequence_list):
                 else:
                     transition_prob = hmm_dicts[0][transition_key]
 
+                if sentence[i] not in vocab:
+                    emission_key = "(" + "START" + "," + "<unk>" + ")"
+                elif vocab[sentence[i]] < THRESHOLD:
+                    emission_key = "(" + "START" + "," + "<unk>" + ")"
+
+
+
+                ### maybe
                 if emission_key not in hmm_dicts[1]:
                     emission_prob = 0
+
+
                 else:
                     emission_prob = hmm_dicts[1][emission_key]
 
@@ -307,8 +318,39 @@ def viterbi_decoding(sentence, correct_sequence_list):
             viterbi_matrix[i][j] = highest_current_path_prob
             backpointer_matrix[i][j] = highest_current_path_prob_pos_tag
 
-    print(viterbi_matrix[36])
-    print(backpointer_matrix[35])
+        all_zero = True
+        for j in range(0,len(PENN_TREE_BANK_TAGSET)):
+            if viterbi_matrix[i][j] != 0:
+                all_zero = False
+        if all_zero:
+            viterbi_matrix[i][1] = 1
+            backpointer_matrix[i][1] = 36
+
+    print(viterbi_matrix[2])
+
+
+    # backtrace
+    optimal_path = []
+    optimal_path_prob = 0
+    optimal_end_pos_tag_j = -1
+    for j in range(len(PENN_TREE_BANK_TAGSET)):
+        if viterbi_matrix[len(sentence) - 1][j] > optimal_path_prob:
+            optimal_path_prob = viterbi_matrix[len(sentence) - 1][j]
+            optimal_end_pos_tag_j = j
+
+    optimal_path.append(PENN_TREE_BANK_TAGSET[optimal_end_pos_tag_j])
+    optimal_previous_pos_tag_j = backpointer_matrix[len(sentence) - 1][optimal_end_pos_tag_j]
+    optimal_previos_pos_tag = PENN_TREE_BANK_TAGSET[optimal_previous_pos_tag_j]
+    optimal_path.insert(0, optimal_previos_pos_tag)
+
+    for i in reversed(range(1, len(sentence) - 1)):
+
+        optimal_previous_pos_tag_j = backpointer_matrix[i][optimal_previous_pos_tag_j]
+        optimal_previos_pos_tag = PENN_TREE_BANK_TAGSET[optimal_previous_pos_tag_j]
+        optimal_path.insert(0, optimal_previos_pos_tag)
+
+    return optimal_path
+
 
 if __name__ == '__main__':
     vocab = {}
@@ -335,11 +377,22 @@ if __name__ == '__main__':
         hmm_dicts = json.load(hmm_file)
         viterbi_input_sentence_list = []
         correct_pos_tag_sequence = []
-        correct_pos_tag_count = 0
+        total_words_predicted = 0
+        correct_prediction_counts = 0
 
         while True:
             line = input_file.readline()
             if not line:
+                predicted_pos_tags_list = viterbi_decoding(viterbi_input_sentence_list)
+
+                total_words_predicted = total_words_predicted + len(viterbi_input_sentence_list)
+
+                for i in range(0, len(correct_pos_tag_sequence)):
+                    if predicted_pos_tags_list[i] == correct_pos_tag_sequence[i]:
+                        correct_prediction_counts = correct_prediction_counts + 1
+
+                print(predicted_pos_tags_list)
+                print(correct_pos_tag_sequence)
                 break
             if line.strip():
                 word = line.split("\t")[1].strip()
@@ -348,11 +401,19 @@ if __name__ == '__main__':
                 viterbi_input_sentence_list.append(word)
                 correct_pos_tag_sequence.append(correct_pos_tag)
 
-
-
             else:
-                viterbi_decoding(viterbi_input_sentence_list, correct_pos_tag_sequence)
+
+                predicted_pos_tags_list = viterbi_decoding(viterbi_input_sentence_list)
+
+                total_words_predicted = total_words_predicted + len(viterbi_input_sentence_list)
+
+                for i in range(0, len(correct_pos_tag_sequence)):
+                    if predicted_pos_tags_list[i] == correct_pos_tag_sequence[i]:
+                        correct_prediction_counts = correct_prediction_counts + 1
+
+
                 viterbi_input_sentence_list.clear()
                 correct_pos_tag_sequence.clear()
 
-                print("blank")
+        print("##### Task4 ####")
+        print("Viterbi decoding accuracy : " + str(correct_prediction_counts / total_words_predicted))
