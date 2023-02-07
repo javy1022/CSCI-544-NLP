@@ -1,4 +1,5 @@
 import json
+import numpy as np
 
 TRAIN_FILE = "train.txt"
 THRESHOLD = 2
@@ -246,11 +247,34 @@ def greedy_decoding(input_file, hmm_graph, output=False):
         output_file.close()
 
 
+def init_viterbi_matrix(viterbi_matrix_obj, sentence):
+    for j in range(len(PENN_TREE_BANK_TAGSET)):
+        transition_key = "(" + "START" + "," + PENN_TREE_BANK_TAGSET[j] + ")"
+        emission_key = "(" + PENN_TREE_BANK_TAGSET[j] + "," + sentence[0] + ")"
+
+        if transition_key not in hmm_dicts[0]:
+            viterbi_matrix_obj[0][j] = 0
+            continue
+
+        if sentence[0] not in vocab:
+            emission_key = "(" + "START" + "," + "<unk>" + ")"
+        elif vocab[sentence[0]] < THRESHOLD:
+            emission_key = "(" + "START" + "," + "<unk>" + ")"
+
+        if emission_key not in hmm_dicts[1]:
+            viterbi_matrix_obj[0][j] = 0
+            continue
+
+        viterbi_matrix_obj[0][j] = hmm_dicts[0][transition_key] * hmm_dicts[1][emission_key]
+
+    return viterbi_matrix_obj
+
+
 def viterbi_decoding(sentence, correct_sequence_list):
-   
-   
-   
-   
+    viterbi_matrix = np.zeros([len(sentence), len(PENN_TREE_BANK_TAGSET)])
+    # init viterbi matrix
+    viterbi_matrix = init_viterbi_matrix(viterbi_matrix, sentence)
+    print(viterbi_matrix[0])
 
 
 if __name__ == '__main__':
@@ -275,9 +299,10 @@ if __name__ == '__main__':
     # Viterbi
 
     with open("hmm.json", 'r') as hmm_file, open("mini_dev.txt", 'r') as input_file:
-
-        viterbi_input_sentence = ""
+        hmm_dicts = json.load(hmm_file)
+        viterbi_input_sentence_list = []
         correct_pos_tag_sequence = []
+        correct_pos_tag_count = 0
 
         while True:
             line = input_file.readline()
@@ -287,15 +312,14 @@ if __name__ == '__main__':
                 word = line.split("\t")[1].strip()
                 correct_pos_tag = line.split("\t")[2].strip()
 
-                viterbi_input_sentence = viterbi_input_sentence + word + " "
+                viterbi_input_sentence_list.append(word)
                 correct_pos_tag_sequence.append(correct_pos_tag)
 
 
 
             else:
-                viterbi_decoding(viterbi_input_sentence,  correct_pos_tag_sequence)
-                viterbi_input_sentence = ""
+                viterbi_decoding(viterbi_input_sentence_list, correct_pos_tag_sequence)
+                viterbi_input_sentence_list.clear()
                 correct_pos_tag_sequence.clear()
-
 
                 print("blank")
