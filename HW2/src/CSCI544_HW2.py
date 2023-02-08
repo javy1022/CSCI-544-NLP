@@ -8,6 +8,8 @@ PENN_TREE_BANK_TAGSET = ["CC", "CD", "DT", "EX", "FW", "IN", "JJ", "JJR", "JJS",
                          "RB", "RBR", "RBS", "RP", "SYM", "TO", "UH", "VB", "VBD", "VBG", "VBN", "VBP",
                          "VBZ", "WDT", "WP", "WP$", "WRB", "$", "#", "``", "''", "(", ")", ",", ".", ":"]
 
+DEFAULT_POS_TAG = PENN_TREE_BANK_TAGSET[0]
+
 
 def output_vocab_txt():
     unknown_count = 0
@@ -135,6 +137,19 @@ def generate_emission_dict():
     return emission_temp
 
 
+def greedy_guess_pos_tag(previous_predicted_pos_tag, hmm_dicts):
+    highest_prob_pos_tag = [0, "N/A"]
+
+    for i in range(len(PENN_TREE_BANK_TAGSET)):
+        transition_key = "(" + previous_predicted_pos_tag + "," + PENN_TREE_BANK_TAGSET[i] + ")"
+        if transition_key in hmm_dicts[0]:
+            if hmm_dicts[0][transition_key] > highest_prob_pos_tag[0]:
+                highest_prob_pos_tag[0] = hmm_dicts[0][transition_key]
+                highest_prob_pos_tag[1] = previous_predicted_pos_tag
+
+    return highest_prob_pos_tag
+
+
 def greedy_predict_pos_tag(word, is_first_line, hmm_dicts, previous_predicted_pos_tag):
     highest_prob_pos_tag = [0, "N/A"]
 
@@ -178,6 +193,17 @@ def greedy_predict_pos_tag(word, is_first_line, hmm_dicts, previous_predicted_po
             if pos_tag_prob[0] > highest_prob_pos_tag[0]:
                 highest_prob_pos_tag[0] = pos_tag_prob[0]
                 highest_prob_pos_tag[1] = pos_tag_prob[1]
+
+    # If all pos tags resulted in 0
+    if highest_prob_pos_tag[0] == 0:
+        # guess the most possible pos tag using the training data
+        guessed_pos_tag = greedy_guess_pos_tag(previous_predicted_pos_tag, hmm_dicts)
+
+        # If training data not sufficient to determine the pos tag, return a default pos tag
+        if guessed_pos_tag[0] == 0:
+            return DEFAULT_POS_TAG
+
+        return guessed_pos_tag[1]
 
     return highest_prob_pos_tag[1]
 
@@ -367,6 +393,21 @@ def viterbi_decoding(sentence, hmm_dicts_obj):
     return optimal_path
 
 
+def output_viterbi_txt(input_file_obj, output_file_obj, output_content_list_obj):
+    with open(input_file_obj, 'r') as input_file_obj:
+        content_index = 0
+        while True:
+            line = input_file_obj.readline()
+            if not line:
+                break
+            if line.strip():
+                output_line = line + "\t" + output_content_list_obj[content_index]
+                output_file_obj.write("\t".join(output_line.split()) + "\n")
+                content_index = content_index + 1
+            else:
+                output_file_obj.write("\n")
+
+
 def viterbi_decoding_readline_helper(input_file, output=False):
     if output:
         output_file = open("viterbi.out.txt", 'w')
@@ -379,7 +420,6 @@ def viterbi_decoding_readline_helper(input_file, output=False):
     with open("hmm.json", 'r') as hmm_graph, open(input_file, 'r') as input_file_obj:
         hmm_dicts = json.load(hmm_graph)
         viterbi_input_sentence_list = []
-
 
         while True:
             line = input_file_obj.readline()
@@ -416,27 +456,12 @@ def viterbi_decoding_readline_helper(input_file, output=False):
 
                 viterbi_input_sentence_list.clear()
 
-
     if not output:
-        print("##### Task4 ####")
+        print("##### Task4 #####")
         print("Viterbi Decoding Accuracy (" + input_file + ") = "
               + str(correct_prediction_counts / total_words_predicted))
     else:
-        with open(input_file, 'r') as input_file_obj:
-            print("alohaaaaaaaaaaaaaaaaaaa")
-            content_index = 0
-            while True:
-                line = input_file_obj.readline()
-                if not line:
-                    break
-                if line.strip():
-                    output_line = line + "\t" + output_content_list[content_index]
-                    output_file.write("\t".join(output_line.split()) + "\n")
-                    content_index = content_index + 1
-                else:
-                    output_file.write("\n")
-
-
+        output_viterbi_txt(input_file, output_file, output_content_list)
         output_file.close()
 
 
@@ -454,10 +479,8 @@ if __name__ == '__main__':
     with open('hmm.json', 'w') as hmm_file:
         json.dump([transition, emission], hmm_file, indent=4)
 
-    ################## Don't forget to change default pos_tag, current: "N/A" #########################################
     greedy_decoding("dev.txt", "hmm.json")
     greedy_decoding("test.txt", "hmm.json", output=True)
 
-    #viterbi_decoding_readline_helper("dev.txt")
+    viterbi_decoding_readline_helper("dev.txt")
     viterbi_decoding_readline_helper("test.txt", output=True)
-   
