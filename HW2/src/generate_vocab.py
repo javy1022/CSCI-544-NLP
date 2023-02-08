@@ -294,9 +294,9 @@ def viterbi_decoding(sentence):
                     transition_prob = hmm_dicts[0][transition_key]
 
                 if sentence[i] not in vocab:
-                    emission_key = "(" + "START" + "," + "<unk>" + ")"
+                    emission_key = "(" + PENN_TREE_BANK_TAGSET[j] + "," + "<unk>" + ")"
                 elif vocab[sentence[i]] < THRESHOLD:
-                    emission_key = "(" + "START" + "," + "<unk>" + ")"
+                    emission_key = "(" + PENN_TREE_BANK_TAGSET[j] + "," + "<unk>" + ")"
 
 
 
@@ -323,10 +323,11 @@ def viterbi_decoding(sentence):
             if viterbi_matrix[i][j] != 0:
                 all_zero = False
         if all_zero:
-            viterbi_matrix[i][1] = 1
-            backpointer_matrix[i][1] = 36
+            #viterbi_matrix[i][1] = 1
+           # backpointer_matrix[i][1] = 36
+            print("temp")
+        print(i)
 
-    print(viterbi_matrix[2])
 
 
     # backtrace
