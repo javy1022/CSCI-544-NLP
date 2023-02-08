@@ -367,39 +367,77 @@ def viterbi_decoding(sentence, hmm_dicts_obj):
     return optimal_path
 
 
-def viterbi_decoding_readline_helper():
-
-    with open("hmm.json", 'r') as hmm_graph, open("dev.txt", 'r') as input_file:
-        hmm_dicts = json.load(hmm_graph)
-        viterbi_input_sentence_list = []
-        correct_pos_tag_sequence = []
+def viterbi_decoding_readline_helper(input_file, output=False):
+    if output:
+        output_file = open("viterbi.out.txt", 'w')
+        output_content_list = []
+    else:
         total_words_predicted = 0
         correct_prediction_counts = 0
+        correct_pos_tag_sequence = []
+
+    with open("hmm.json", 'r') as hmm_graph, open(input_file, 'r') as input_file_obj:
+        hmm_dicts = json.load(hmm_graph)
+        viterbi_input_sentence_list = []
+
 
         while True:
-            line = input_file.readline()
+            line = input_file_obj.readline()
             if not line:
-                predicted_pos_tags_list = viterbi_decoding(viterbi_input_sentence_list,hmm_dicts)
-                total_words_predicted = total_words_predicted + len(viterbi_input_sentence_list)
-                correct_prediction_counts = count_correct_prediction(predicted_pos_tags_list, correct_pos_tag_sequence,
-                                                                     correct_prediction_counts)
+                predicted_pos_tags_list = viterbi_decoding(viterbi_input_sentence_list, hmm_dicts)
+
+                if not output:
+                    total_words_predicted = total_words_predicted + len(viterbi_input_sentence_list)
+                    correct_prediction_counts = count_correct_prediction(predicted_pos_tags_list,
+                                                                         correct_pos_tag_sequence,
+                                                                         correct_prediction_counts)
+                else:
+                    output_content_list = output_content_list + predicted_pos_tags_list
                 break
 
             if line.strip():
-                word = line.split("\t")[1].strip()
-                correct_pos_tag = line.split("\t")[2].strip()
-                viterbi_input_sentence_list.append(word)
-                correct_pos_tag_sequence.append(correct_pos_tag)
-            else:
-                predicted_pos_tags_list = viterbi_decoding(viterbi_input_sentence_list,hmm_dicts)
-                total_words_predicted = total_words_predicted + len(viterbi_input_sentence_list)
-                correct_prediction_counts = count_correct_prediction(predicted_pos_tags_list, correct_pos_tag_sequence,
-                                                                     correct_prediction_counts)
-                viterbi_input_sentence_list.clear()
-                correct_pos_tag_sequence.clear()
+                if not output:
+                    correct_pos_tag = line.split("\t")[2].strip()
+                    correct_pos_tag_sequence.append(correct_pos_tag)
 
+                word = line.split("\t")[1].strip()
+                viterbi_input_sentence_list.append(word)
+
+            else:
+                predicted_pos_tags_list = viterbi_decoding(viterbi_input_sentence_list, hmm_dicts)
+                if not output:
+                    total_words_predicted = total_words_predicted + len(viterbi_input_sentence_list)
+                    correct_prediction_counts = count_correct_prediction(predicted_pos_tags_list,
+                                                                         correct_pos_tag_sequence,
+                                                                         correct_prediction_counts)
+                    correct_pos_tag_sequence.clear()
+                else:
+                    output_content_list = output_content_list + predicted_pos_tags_list
+
+                viterbi_input_sentence_list.clear()
+
+
+    if not output:
         print("##### Task4 ####")
-        print("Viterbi Decoding Accuracy : " + str(correct_prediction_counts / total_words_predicted))
+        print("Viterbi Decoding Accuracy (" + input_file + ") = "
+              + str(correct_prediction_counts / total_words_predicted))
+    else:
+        with open(input_file, 'r') as input_file_obj:
+            print("alohaaaaaaaaaaaaaaaaaaa")
+            content_index = 0
+            while True:
+                line = input_file_obj.readline()
+                if not line:
+                    break
+                if line.strip():
+                    output_line = line + "\t" + output_content_list[content_index]
+                    output_file.write("\t".join(output_line.split()) + "\n")
+                    content_index = content_index + 1
+                else:
+                    output_file.write("\n")
+
+
+        output_file.close()
 
 
 if __name__ == '__main__':
@@ -418,7 +456,8 @@ if __name__ == '__main__':
 
     ################## Don't forget to change default pos_tag, current: "N/A" #########################################
     greedy_decoding("dev.txt", "hmm.json")
-    #greedy_decoding("test.txt", "hmm.json", output=True)
+    greedy_decoding("test.txt", "hmm.json", output=True)
 
-
-    viterbi_decoding_readline_helper()
+    #viterbi_decoding_readline_helper("dev.txt")
+    viterbi_decoding_readline_helper("test.txt", output=True)
+   
