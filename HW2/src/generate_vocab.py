@@ -364,15 +364,18 @@ def viterbi_decoding(sentence):
             optimal_end_pos_tag_j = j
 
     optimal_path.append(PENN_TREE_BANK_TAGSET[optimal_end_pos_tag_j])
-    optimal_previous_pos_tag_j = backpointer_matrix[len(sentence) - 1][optimal_end_pos_tag_j]
-    optimal_previos_pos_tag = PENN_TREE_BANK_TAGSET[optimal_previous_pos_tag_j]
-    optimal_path.insert(0, optimal_previos_pos_tag)
 
-    for i in reversed(range(1, len(sentence) - 1)):
-
-        optimal_previous_pos_tag_j = backpointer_matrix[i][optimal_previous_pos_tag_j]
+    if (len(sentence) > 1):
+        optimal_previous_pos_tag_j = backpointer_matrix[len(sentence) - 1][optimal_end_pos_tag_j]
         optimal_previos_pos_tag = PENN_TREE_BANK_TAGSET[optimal_previous_pos_tag_j]
         optimal_path.insert(0, optimal_previos_pos_tag)
+
+
+        for i in reversed(range(1, len(sentence) - 1)):
+
+             optimal_previous_pos_tag_j = backpointer_matrix[i][optimal_previous_pos_tag_j]
+             optimal_previos_pos_tag = PENN_TREE_BANK_TAGSET[optimal_previous_pos_tag_j]
+             optimal_path.insert(0, optimal_previos_pos_tag)
 
     return optimal_path
 
@@ -415,7 +418,7 @@ if __name__ == '__main__':
                 for i in range(0, len(correct_pos_tag_sequence)):
                     if predicted_pos_tags_list[i] == correct_pos_tag_sequence[i]:
                         correct_prediction_counts = correct_prediction_counts + 1
-
+                print(predicted_pos_tags_list)
                # print(predicted_pos_tags_list)
                # print(correct_pos_tag_sequence)
                 break
