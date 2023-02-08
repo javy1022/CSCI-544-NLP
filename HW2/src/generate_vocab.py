@@ -10,6 +10,8 @@ PENN_TREE_BANK_TAGSET = ["CC", "CD", "DT", "EX", "FW", "IN", "JJ", "JJR", "JJS",
 
 default_pos_tag_guess = "CC"
 
+debug_index = 0
+
 def output_vocab_txt():
     unknown_count = 0
 
@@ -268,14 +270,33 @@ def init_viterbi_matrix(viterbi_matrix_obj, sentence):
 
         viterbi_matrix_obj[0][j] = hmm_dicts[0][transition_key] * hmm_dicts[1][emission_key]
 
+
+
+
     return viterbi_matrix_obj
 
+
+#def debug_helper():
 
 def viterbi_decoding(sentence):
     viterbi_matrix = np.zeros([len(sentence), len(PENN_TREE_BANK_TAGSET)])
     backpointer_matrix = np.zeros([len(sentence), len(PENN_TREE_BANK_TAGSET)], dtype=int)
+
     # init viterbi matrix
     viterbi_matrix = init_viterbi_matrix(viterbi_matrix, sentence)
+
+    # maybe ?
+
+    all_zero = True
+    for j in range(0, len(PENN_TREE_BANK_TAGSET)):
+        if viterbi_matrix[0][j] != 0:
+            all_zero = False
+    if all_zero:
+        # viterbi_matrix[i][1] = 1
+        # backpointer_matrix[i][1] = 36
+        viterbi_matrix[0] = np.ones(len(PENN_TREE_BANK_TAGSET))
+
+
 
     for j in range(len(PENN_TREE_BANK_TAGSET)):
         backpointer_matrix[0][j] = 0
@@ -319,14 +340,17 @@ def viterbi_decoding(sentence):
             backpointer_matrix[i][j] = highest_current_path_prob_pos_tag
 
         all_zero = True
-        for j in range(0,len(PENN_TREE_BANK_TAGSET)):
+        for j in range(0, len(PENN_TREE_BANK_TAGSET)):
             if viterbi_matrix[i][j] != 0:
                 all_zero = False
         if all_zero:
-            #viterbi_matrix[i][1] = 1
-           # backpointer_matrix[i][1] = 36
-            print("temp")
-        print(i)
+            # viterbi_matrix[i][1] = 1
+            # backpointer_matrix[i][1] = 36
+            print(debug_index)
+            viterbi_matrix[i] = np.ones(len(PENN_TREE_BANK_TAGSET))
+
+
+
 
 
 
@@ -374,7 +398,7 @@ if __name__ == '__main__':
 
     # Viterbi
 
-    with open("hmm.json", 'r') as hmm_file, open("mini_dev.txt", 'r') as input_file:
+    with open("hmm.json", 'r') as hmm_file, open("dev.txt", 'r') as input_file:
         hmm_dicts = json.load(hmm_file)
         viterbi_input_sentence_list = []
         correct_pos_tag_sequence = []
@@ -392,8 +416,8 @@ if __name__ == '__main__':
                     if predicted_pos_tags_list[i] == correct_pos_tag_sequence[i]:
                         correct_prediction_counts = correct_prediction_counts + 1
 
-                print(predicted_pos_tags_list)
-                print(correct_pos_tag_sequence)
+               # print(predicted_pos_tags_list)
+               # print(correct_pos_tag_sequence)
                 break
             if line.strip():
                 word = line.split("\t")[1].strip()
@@ -407,6 +431,8 @@ if __name__ == '__main__':
                 predicted_pos_tags_list = viterbi_decoding(viterbi_input_sentence_list)
 
                 total_words_predicted = total_words_predicted + len(viterbi_input_sentence_list)
+
+                debug_index = debug_index + len(viterbi_input_sentence_list) + 1
 
                 for i in range(0, len(correct_pos_tag_sequence)):
                     if predicted_pos_tags_list[i] == correct_pos_tag_sequence[i]:
